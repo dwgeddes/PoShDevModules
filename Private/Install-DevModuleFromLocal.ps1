@@ -3,7 +3,7 @@
     Installs a module from a local filesystem path
 
 .DESCRIPTION
-    Internal function to handle installation from local sources
+    Internal helper function to handle installation from local sources
 
 .PARAMETER SourcePath
     Path to the local module directory
@@ -16,9 +16,6 @@
 
 .PARAMETER SkipImport
     Whether to skip importing after installation
-
-.PARAMETER LogLevel
-    Logging level
 #>
 function Install-DevModuleFromLocal {
     [CmdletBinding()]
@@ -30,8 +27,7 @@ function Install-DevModuleFromLocal {
         [string]$InstallPath,
         
         [switch]$Force,
-        [switch]$SkipImport,
-        [string]$LogLevel
+        [switch]$SkipImport
     )
 
     try {
@@ -48,45 +44,51 @@ function Install-DevModuleFromLocal {
 
         $manifestFile = $manifestFiles[0]
         $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestFile.Name)
+        $moduleVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
         
-        Write-LogMessage "Found module manifest: $($manifestFile.Name)" $LogLevel "Verbose"
-        Write-LogMessage "Module name: $moduleName" $LogLevel "Normal"
+        Write-Verbose "Found module manifest: $($manifestFile.Name)"
+        Write-Host "Module name: $moduleName, Version: $moduleVersion" -ForegroundColor Green
 
-        $destinationPath = Join-Path $InstallPath $moduleName
+        # Create version-specific destination path: InstallPath/ModuleName/Version/
+        $moduleBasePath = Join-Path $InstallPath $moduleName
+        $destinationPath = Join-Path $moduleBasePath $moduleVersion
 
         # Check if module already exists
         if ((Test-Path $destinationPath) -and -not $Force) {
-            throw "Module '$moduleName' already exists at $destinationPath. Use -Force to overwrite."
+            throw "Module '$moduleName' version '$moduleVersion' already exists at $destinationPath. Use -Force to overwrite."
         }
 
-        # Create destination directory
+        # Create destination directory (including version directory)
         if (Test-Path $destinationPath) {
             Remove-Item -Path $destinationPath -Recurse -Force
-            Write-LogMessage "Removed existing module directory" $LogLevel "Verbose"
+            Write-Verbose "Removed existing module version directory"
         }
 
         New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
-        Write-LogMessage "Created destination directory: $destinationPath" $LogLevel "Verbose"
+        Write-Verbose "Created destination directory: $destinationPath"
 
         # Copy module files
         Copy-Item -Path "$SourcePath\*" -Destination $destinationPath -Recurse -Force
-        Write-LogMessage "Copied module files from $SourcePath to $destinationPath" $LogLevel "Normal"
+        Write-Host "Copied module files from $SourcePath to $destinationPath" -ForegroundColor Green
 
         # Save metadata
-        Save-ModuleMetadata -ModuleName $moduleName -SourceType 'Local' -SourcePath $SourcePath -InstallPath $InstallPath -LogLevel $LogLevel
+        Save-ModuleMetadata -ModuleName $moduleName -SourceType 'Local' -SourcePath $SourcePath -InstallPath $InstallPath
 
         # Import module if requested
         if (-not $SkipImport) {
             try {
-                Import-Module $destinationPath -Force
-                Write-LogMessage "Imported module: $moduleName" $LogLevel "Normal"
+                Import-Module $moduleName -Force
+                Write-Host "Imported module: $moduleName" -ForegroundColor Green
             }
             catch {
                 Write-Warning "Module installed but failed to import: $($_.Exception.Message)"
             }
         }
 
-        Write-LogMessage "Successfully installed module '$moduleName' from local path" $LogLevel "Normal"
+        Write-Host "Successfully installed module '$moduleName' from local path" -ForegroundColor Green
+        
+        # Return the installed module object
+        return Get-InstalledDevModule -Name $moduleName -InstallPath $InstallPath
     }
     catch {
         throw "Failed to install module from local path: $($_.Exception.Message)"

@@ -31,9 +31,6 @@
 .PARAMETER InstallPath
     Custom installation directory (default: ~/Documents/PowerShell/DevModules)
 
-.PARAMETER LogLevel
-    Logging verbosity level: Silent, Normal, or Verbose
-
 .EXAMPLE
     Install-DevModule -GitHubRepo "myuser/mymodule" -PersonalAccessToken "ghp_xxxxxxxxxxxx"
 
@@ -66,26 +63,38 @@ function Install-DevModule {
         [switch]$Force,
         [switch]$SkipImport,
         
-        [string]$InstallPath,
-        
-        [ValidateSet('Silent', 'Normal', 'Verbose')]
-        [string]$LogLevel = 'Normal'
+        [string]$InstallPath
     )
 
     begin {
-        if (-not $InstallPath) {
-            $InstallPath = if ($IsWindows) { 
-                Join-Path $env:USERPROFILE 'Documents\PowerShell\DevModules' 
-            } else { 
-                Join-Path $env:HOME 'Documents/PowerShell/DevModules' 
+        # Validate parameters using standardized validation
+        try {
+            $validationParams = @{}
+            if ($PSCmdlet.ParameterSetName -eq 'GitHub') { 
+                $validationParams.GitHubRepo = $GitHubRepo 
             }
+            if ($PSCmdlet.ParameterSetName -eq 'Local') { 
+                $validationParams.SourcePath = $SourcePath 
+            }
+            if ($InstallPath) { 
+                $validationParams.InstallPath = $InstallPath 
+            }
+            Test-StandardParameters @validationParams
         }
-        Write-LogMessage "Starting module installation..." $LogLevel "Normal"
+        catch {
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate installation parameters" -WriteToHost
+            return
+        }
+        
+        if (-not $InstallPath) {
+            $InstallPath = Get-DevModulesPath
+        }
+        Write-Verbose "Starting module installation..."
         
         # Ensure install directory exists
         if (-not (Test-Path $InstallPath)) {
             New-Item -Path $InstallPath -ItemType Directory -Force | Out-Null
-            Write-LogMessage "Created install directory: $InstallPath" $LogLevel "Normal"
+            Write-Verbose "Created install directory: $InstallPath"
         }
     }
 
@@ -112,12 +121,12 @@ function Install-DevModule {
             }
         }
         catch {
-            Write-Error "Failed to install module: $($_.Exception.Message)"
-            throw
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "install module" -WriteToHost
+            return
         }
     }
 
     end {
-        Write-LogMessage "Module installation completed." $LogLevel "Normal"
+        Write-Verbose "Module installation completed."
     }
 }

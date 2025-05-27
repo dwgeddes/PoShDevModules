@@ -27,7 +27,7 @@
     FunctionsToExport = @(
         'Install-DevModule',
         'Get-InstalledDevModule', 
-        'Remove-DevModule',
+        'Uninstall-DevModule',
         'Update-DevModule',
         'Invoke-DevModuleOperation'
     )

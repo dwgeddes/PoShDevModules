@@ -22,9 +22,6 @@
 
 .PARAMETER ModuleSubPath
     Module subdirectory path
-
-.PARAMETER LogLevel
-    Logging level
 #>
 function Save-ModuleMetadata {
     [CmdletBinding()]
@@ -43,29 +40,46 @@ function Save-ModuleMetadata {
         [string]$InstallPath,
         
         [string]$Branch,
-        [string]$ModuleSubPath,
-        [string]$LogLevel
+        [string]$ModuleSubPath
     )
 
     try {
         $metadataDir = Join-Path $InstallPath '.metadata'
         if (-not (Test-Path $metadataDir)) {
             New-Item -Path $metadataDir -ItemType Directory -Force | Out-Null
-            Write-LogMessage "Created metadata directory: $metadataDir" $LogLevel "Verbose"
+            Write-Verbose "Created metadata directory: $metadataDir"
         }
 
-        # Try to get module version from manifest
-        $moduleDir = Join-Path $InstallPath $ModuleName
-        $manifestPath = Join-Path $moduleDir "$ModuleName.psd1"
+        # Try to get module version from manifest in version-specific directory structure
+        $moduleBasePath = Join-Path $InstallPath $ModuleName
         $version = "Unknown"
+        $latestVersionPath = $null
         
-        if (Test-Path $manifestPath) {
-            try {
-                $manifest = Import-PowerShellDataFile $manifestPath
-                $version = $manifest.ModuleVersion
-            }
-            catch {
-                Write-LogMessage "Could not read version from manifest: $($_.Exception.Message)" $LogLevel "Verbose"
+        # Find the latest version directory
+        if (Test-Path $moduleBasePath) {
+            $versionDirs = Get-ChildItem -Path $moduleBasePath -Directory | Sort-Object Name -Descending
+            if ($versionDirs.Count -gt 0) {
+                $latestVersionPath = $versionDirs[0].FullName
+                $versionDirName = $versionDirs[0].Name
+                
+                # Try to get version from manifest file first
+                $manifestPath = Join-Path $latestVersionPath "$ModuleName.psd1"
+                if (Test-Path $manifestPath) {
+                    try {
+                        $manifest = Import-PowerShellDataFile $manifestPath
+                        $version = $manifest.ModuleVersion
+                        Write-Verbose "Found module version from manifest: $version"
+                    }
+                    catch {
+                        # Fall back to directory name if manifest exists but can't be read
+                        $version = $versionDirName
+                        Write-Verbose "Could not read version from manifest, using directory name: $version"
+                    }
+                } else {
+                    # Fall back to directory name if no manifest file
+                    $version = $versionDirName
+                    Write-Verbose "No manifest found, using directory name: $version"
+                }
             }
         }
 
@@ -74,16 +88,17 @@ function Save-ModuleMetadata {
             Version = $version
             SourceType = $SourceType
             SourcePath = $SourcePath
-            InstallPath = $moduleDir
+            InstallPath = $moduleBasePath
             InstallDate = (Get-Date).ToString('o')
             Branch = $Branch
             ModuleSubPath = $ModuleSubPath
+            LatestVersionPath = $latestVersionPath
         }
 
         $metadataFile = Join-Path $metadataDir "$ModuleName.json"
         $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile
         
-        Write-LogMessage "Saved metadata for module: $ModuleName" $LogLevel "Verbose"
+        Write-Verbose "Saved metadata for module: $ModuleName"
     }
     catch {
         Write-Warning "Failed to save metadata for module '$ModuleName': $($_.Exception.Message)"

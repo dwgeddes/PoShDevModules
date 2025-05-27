@@ -14,13 +14,10 @@
     GitHub Personal Access Token (required if the original source was a private GitHub repository)
 
 .PARAMETER InstallPath
-    Path where development modules are installed (default: ~/Documents/PowerShell/DevModules)
+    Path where development modules are installed (default: ~/.local/share/powershell/DevModules on macOS/Linux, ~/Documents/PowerShell/DevModules on Windows)
 
 .PARAMETER Force
     Skip confirmation prompts and force the update
-
-.PARAMETER LogLevel
-    Logging verbosity level: Silent, Normal, or Verbose
 
 .EXAMPLE
     Update-DevModule -Name "MyModule"
@@ -29,34 +26,48 @@
     Update-DevModule -Name "MyModule" -PersonalAccessToken "ghp_xxxxxxxxxxxx"
 
 .EXAMPLE
-    Update-DevModule -Name "MyModule" -Force -LogLevel Verbose
+    Update-DevModule -Name "MyModule" -Force -Verbose
 #>
 function Update-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Name,
         
         [Alias('PAT', 'GitHubToken')]
+        [ValidateNotNullOrEmpty()]
         [string]$PersonalAccessToken,
         
+        [ValidateScript({
+            if ($_ -and -not (Test-Path $_ -PathType Container)) {
+                throw "Install path does not exist: $_"
+            }
+            $true
+        })]
         [string]$InstallPath,
         
-        [switch]$Force,
-        
-        [ValidateSet('Silent', 'Normal', 'Verbose')]
-        [string]$LogLevel = 'Normal'
+        [switch]$Force
     )
 
     begin {
-        if (-not $InstallPath) {
-            $InstallPath = if ($IsWindows) { 
-                Join-Path $env:USERPROFILE 'Documents\PowerShell\DevModules' 
-            } else { 
-                Join-Path $env:HOME 'Documents/PowerShell/DevModules' 
+        # Validate parameters using standardized validation
+        try {
+            $validationParams = @{}
+            if ($InstallPath) { 
+                $validationParams.InstallPath = $InstallPath 
             }
+            Test-StandardParameters @validationParams
         }
-        Write-LogMessage "Starting update of module: $Name" $LogLevel "Normal"
+        catch {
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate update parameters" -WriteToHost
+            return
+        }
+        
+        if (-not $InstallPath) {
+            $InstallPath = Get-DevModulesPath
+        }
+        Write-Verbose "Starting update of module: $Name"
     }
 
     process {
@@ -64,11 +75,16 @@ function Update-DevModule {
             # Get existing module information
             $module = Get-InstalledDevModule -Name $Name -InstallPath $InstallPath
             if (-not $module) {
-                Write-Error "Module '$Name' is not installed. Use Install-DevModule to install it first."
+                Invoke-StandardErrorHandling -ErrorRecord (New-Object System.Management.Automation.ErrorRecord(
+                    (New-Object System.InvalidOperationException("Module '$Name' is not installed. Use Install-DevModule to install it first.")),
+                    "ModuleNotInstalled",
+                    [System.Management.Automation.ErrorCategory]::ObjectNotFound,
+                    $Name
+                )) -Operation "find installed module" -WriteToHost
                 return
             }
 
-            Write-LogMessage "Found installed module: $($module.Name) (Source: $($module.SourceType))" $LogLevel "Normal"
+            Write-Verbose "Found installed module: $($module.Name) (Source: $($module.SourceType))"
 
             # Confirm update unless Force is specified
             if (-not $Force) {
@@ -81,52 +97,63 @@ function Update-DevModule {
                 $decision = $Host.UI.PromptForChoice($title, $message, $choices, 1)
                 
                 if ($decision -ne 0) {
-                    Write-LogMessage "Module update cancelled by user." $LogLevel "Normal"
+                    Write-Host "Module update cancelled by user." -ForegroundColor Yellow
                     return
                 }
             }
 
             if ($PSCmdlet.ShouldProcess($Name, "Update module")) {
-                switch ($module.SourceType) {
+                $updatedModule = switch ($module.SourceType) {
                     'Local' {
-                        Update-DevModuleFromLocal -Module $module -LogLevel $LogLevel
+                        Update-DevModuleFromLocal -Module $module
                     }
                     'GitHub' {
                         $params = @{
                             Module = $module
-                            LogLevel = $LogLevel
                         }
                         if ($PersonalAccessToken) { $params.PersonalAccessToken = $PersonalAccessToken }
                         
                         Update-DevModuleFromGitHub @params
                     }
                     default {
-                        Write-Error "Unknown source type: $($module.SourceType)"
+                        Invoke-StandardErrorHandling -ErrorRecord (New-Object System.Management.Automation.ErrorRecord(
+                            (New-Object System.InvalidOperationException("Unknown source type: $($module.SourceType)")),
+                            "UnknownSourceType",
+                            [System.Management.Automation.ErrorCategory]::InvalidData,
+                            $module.SourceType
+                        )) -Operation "determine module source type" -WriteToHost
                         return
                     }
                 }
 
-                # Update the metadata
+                # Update the metadata LastUpdated timestamp
                 $metadataPath = Join-Path $InstallPath '.metadata'
                 $metadataFile = Join-Path $metadataPath "$Name.json"
                 
                 if (Test-Path $metadataFile) {
                     $metadata = Get-Content $metadataFile | ConvertFrom-Json
+                    # Add LastUpdated property if it doesn't exist
+                    if (-not $metadata.PSObject.Properties['LastUpdated']) {
+                        $metadata | Add-Member -MemberType NoteProperty -Name 'LastUpdated' -Value $null
+                    }
                     $metadata.LastUpdated = (Get-Date).ToString('o')
                     $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile
-                    Write-LogMessage "Updated metadata for module: $Name" $LogLevel "Verbose"
+                    Write-Verbose "Updated metadata timestamp for module: $Name"
                 }
 
-                Write-LogMessage "Successfully updated module: $Name" $LogLevel "Normal"
+                Write-Host "Successfully updated module: $Name" -ForegroundColor Green
+                
+                # Return the updated module object
+                return $updatedModule
             }
         }
         catch {
-            Write-Error "Failed to update module '$Name': $($_.Exception.Message)"
-            throw
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "update module '$Name'" -WriteToHost
+            return
         }
     }
 
     end {
-        Write-LogMessage "Module update completed." $LogLevel "Normal"
+        Write-Verbose "Module update completed."
     }
 }

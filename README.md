@@ -46,9 +46,9 @@ Get-InstalledDevModule
 Update-DevModule -Name "ModuleName" -PersonalAccessToken "your_token"
 ```
 
-### Remove a module
+### Uninstall a module
 ```powershell
-Remove-DevModule -Name "ModuleName"
+Uninstall-DevModule -Name "ModuleName"
 ```
 
 ### Use the convenience function (equivalent to original script)
@@ -65,7 +65,7 @@ Invoke-DevModuleOperation -Remove "ModuleName"
 | `Install-DevModule` | Install a module from local path or GitHub repository |
 | `Get-InstalledDevModule` | List all installed development modules |
 | `Update-DevModule` | Update an installed module from its original source |
-| `Remove-DevModule` | Remove an installed development module |
+| `Uninstall-DevModule` | Uninstall an installed development module |
 | `Invoke-DevModuleOperation` | Convenience function providing the original script interface |
 
 ## Advanced Options
@@ -105,7 +105,7 @@ PoShDevModules/
 │   ├── Install-DevModule.ps1
 │   ├── Get-InstalledDevModule.ps1
 │   ├── Update-DevModule.ps1
-│   └── Remove-DevModule.ps1
+│   └── Uninstall-DevModule.ps1
 └── Private/                     # Internal helper functions
     ├── Install-DevModuleFromLocal.ps1
     ├── Install-DevModuleFromGitHub.ps1

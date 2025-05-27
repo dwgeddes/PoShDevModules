@@ -10,7 +10,7 @@
     Optional filter to get information about a specific module
 
 .PARAMETER InstallPath
-    Path where development modules are installed (default: ~/Documents/PowerShell/DevModules)
+    Path where development modules are installed (default: ~/.local/share/powershell/DevModules on macOS/Linux, ~/Documents/PowerShell/DevModules on Windows)
 
 .EXAMPLE
     Get-InstalledDevModule
@@ -24,17 +24,34 @@
 function Get-InstalledDevModule {
     [CmdletBinding()]
     param (
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Name,
+        
+        [ValidateScript({
+            if ($_ -and -not (Test-Path $_ -PathType Container)) {
+                # Allow non-existent paths - they'll be handled gracefully in the function
+                return $true
+            }
+            $true
+        })]
         [string]$InstallPath
     )
 
     begin {
-        if (-not $InstallPath) {
-            $InstallPath = if ($IsWindows) { 
-                Join-Path $env:USERPROFILE 'Documents\PowerShell\DevModules' 
-            } else { 
-                Join-Path $env:HOME 'Documents/PowerShell/DevModules' 
+        # Validate parameters
+        try {
+            if ($InstallPath) {
+                Test-StandardParameters -InstallPath $InstallPath
             }
+        }
+        catch {
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate parameters" -WriteToHost
+            return
+        }
+        
+        if (-not $InstallPath) {
+            $InstallPath = Get-DevModulesPath
         }
         if (-not (Test-Path $InstallPath)) {
             Write-Verbose "Install path does not exist: $InstallPath"
@@ -51,7 +68,7 @@ function Get-InstalledDevModule {
             }
 
             $modules = @()
-            $metadataFiles = Get-ChildItem -Path $metadataPath -Filter '*.json' -ErrorAction SilentlyContinue
+            $metadataFiles = Get-ChildItem -Path $metadataPath -Filter '*.json' -Force -ErrorAction SilentlyContinue
 
             foreach ($file in $metadataFiles) {
                 try {
@@ -70,6 +87,7 @@ function Get-InstalledDevModule {
                         InstallDate = [DateTime]$metadata.InstallDate
                         Branch = $metadata.Branch
                         LastUpdated = if ($metadata.LastUpdated) { [DateTime]$metadata.LastUpdated } else { $null }
+                        LatestVersionPath = $metadata.LatestVersionPath
                     }
                     
                     $modules += $moduleInfo
@@ -87,8 +105,8 @@ function Get-InstalledDevModule {
             return $modules | Sort-Object Name
         }
         catch {
-            Write-Error "Failed to get installed modules: $($_.Exception.Message)"
-            throw
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "get installed modules" -WriteToHost
+            return
         }
     }
 }

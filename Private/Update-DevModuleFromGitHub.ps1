@@ -10,9 +10,6 @@
 
 .PARAMETER PersonalAccessToken
     GitHub PAT for private repos
-
-.PARAMETER LogLevel
-    Logging level
 #>
 function Update-DevModuleFromGitHub {
     [CmdletBinding()]
@@ -20,30 +17,29 @@ function Update-DevModuleFromGitHub {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Module,
         
-        [string]$PersonalAccessToken,
-        [string]$LogLevel
+        [string]$PersonalAccessToken
     )
 
     try {
-        Write-LogMessage "Updating module '$($Module.Name)' from GitHub: $($Module.SourcePath)" $LogLevel "Normal"
+        Write-Host "Updating module '$($Module.Name)' from GitHub: $($Module.SourcePath)" -ForegroundColor Green
 
         # Parse the GitHub repo info
         $repoInfo = Get-GitHubRepoInfo -GitHubRepo $Module.SourcePath
         $branch = if ($Module.Branch) { $Module.Branch } else { 'main' }
         
-        Write-LogMessage "Downloading latest version from branch: $branch" $LogLevel "Verbose"
+        Write-Verbose "Downloading latest version from branch: $branch"
 
         # Create temporary directory for download
         $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "DevModule_$(Get-Random)"
         New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
-        Write-LogMessage "Created temporary directory: $tempDir" $LogLevel "Verbose"
+        Write-Verbose "Created temporary directory: $tempDir"
 
         try {
             # Download the repository
             $downloadUrl = "https://github.com/$($repoInfo.Owner)/$($repoInfo.Repo)/archive/refs/heads/$branch.zip"
             $zipPath = Join-Path $tempDir "repo.zip"
             
-            Write-LogMessage "Downloading from: $downloadUrl" $LogLevel "Verbose"
+            Write-Verbose "Downloading from: $downloadUrl"
             
             # Use appropriate method based on whether we have a PAT
             if ($PersonalAccessToken) {
@@ -53,12 +49,12 @@ function Update-DevModuleFromGitHub {
                 Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
             }
 
-            Write-LogMessage "Downloaded repository archive" $LogLevel "Normal"
+            Write-Host "Downloaded repository archive" -ForegroundColor Green
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
             Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-            Write-LogMessage "Extracted repository archive" $LogLevel "Verbose"
+            Write-Verbose "Extracted repository archive"
 
             # Find the actual module directory
             $repoDir = Get-ChildItem -Path $extractPath -Directory | Select-Object -First 1
@@ -71,7 +67,7 @@ function Update-DevModuleFromGitHub {
                 }
             }
 
-            Write-LogMessage "Module source path: $sourcePath" $LogLevel "Verbose"
+            Write-Verbose "Module source path: $sourcePath"
 
             # Validate that module files exist
             $manifestFiles = Get-ChildItem -Path $sourcePath -Filter '*.psd1' -ErrorAction SilentlyContinue
@@ -79,33 +75,63 @@ function Update-DevModuleFromGitHub {
                 throw "No PowerShell module manifest (.psd1) found in: $sourcePath"
             }
 
-            # Remove existing module directory
-            if (Test-Path $Module.InstallPath) {
-                Remove-Item -Path $Module.InstallPath -Recurse -Force
-                Write-LogMessage "Removed existing module directory" $LogLevel "Verbose"
+            # Extract version information from new manifest
+            $manifestFile = $manifestFiles[0]
+            $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestFile.Name)
+            $newVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
+            
+            Write-Verbose "Found module manifest: $($manifestFile.Name)"
+            Write-Host "Updating to version: $newVersion" -ForegroundColor Green
+
+            # Extract install base path from Module.InstallPath (remove old version directory if present)
+            $installBasePath = Split-Path $Module.InstallPath -Parent
+            if ((Split-Path $installBasePath -Leaf) -eq $Module.Name) {
+                # Module.InstallPath was already the base path
+                $moduleBasePath = $Module.InstallPath
+                $installBasePath = Split-Path $moduleBasePath -Parent
+            } else {
+                # Module.InstallPath included version directory
+                $moduleBasePath = Join-Path $installBasePath $Module.Name
             }
 
-            # Create new directory
-            New-Item -Path $Module.InstallPath -ItemType Directory -Force | Out-Null
+            # Create new version-specific destination path
+            $newDestinationPath = Join-Path $moduleBasePath $newVersion
+
+            # Remove existing version directory if it exists
+            if (Test-Path $newDestinationPath) {
+                Remove-Item -Path $newDestinationPath -Recurse -Force
+                Write-Verbose "Removed existing version directory: $newDestinationPath"
+            }
+
+            # Create new version directory
+            New-Item -Path $newDestinationPath -ItemType Directory -Force | Out-Null
+            Write-Verbose "Created new version directory: $newDestinationPath"
 
             # Copy updated files
-            Copy-Item -Path "$sourcePath\*" -Destination $Module.InstallPath -Recurse -Force
-            Write-LogMessage "Copied updated module files" $LogLevel "Normal"
+            Copy-Item -Path "$sourcePath\*" -Destination $newDestinationPath -Recurse -Force
+            Write-Host "Copied updated module files" -ForegroundColor Green
+
+            # Update metadata with new version and path
+            Save-ModuleMetadata -ModuleName $Module.Name -SourceType 'GitHub' -SourcePath $Module.SourcePath -InstallPath $installBasePath -Branch $Module.Branch
 
             # Reload module if it's currently loaded
             if (Get-Module -Name $Module.Name -ErrorAction SilentlyContinue) {
                 Remove-Module -Name $Module.Name -Force
-                Import-Module $Module.InstallPath -Force
-                Write-LogMessage "Reloaded module in current session" $LogLevel "Normal"
+                Import-Module $Module.Name -Force
+                Write-Host "Reloaded module in current session" -ForegroundColor Green
             }
 
-            Write-LogMessage "Successfully updated module '$($Module.Name)' from GitHub" $LogLevel "Normal"
+            Write-Host "Successfully updated module '$($Module.Name)' to version '$newVersion' from GitHub" -ForegroundColor Green
+            
+            # Return the updated module object
+            $updatedModule = Get-InstalledDevModule -Name $Module.Name -InstallPath $installBasePath
+            return $updatedModule
         }
         finally {
             # Clean up temporary directory
             if (Test-Path $tempDir) {
                 Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-                Write-LogMessage "Cleaned up temporary directory" $LogLevel "Verbose"
+                Write-Verbose "Cleaned up temporary directory"
             }
         }
     }
