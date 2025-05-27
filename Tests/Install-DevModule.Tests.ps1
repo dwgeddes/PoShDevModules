@@ -61,17 +61,17 @@ Describe "Install-DevModule" {
         }
         
         It "Should validate SourcePath exists" {
-            { Install-DevModule -SourcePath "/nonexistent/path" -LogLevel Silent } | Should -Throw
+            { Install-DevModule -SourcePath "/nonexistent/path" } | Should -Throw
         }
         
         It "Should validate SourcePath exists" {
-            { Install-DevModule -SourcePath "/nonexistent/path" -LogLevel Silent } | Should -Throw
+            { Install-DevModule -SourcePath "/nonexistent/path" } | Should -Throw
         }
     }
     
     Context "Local Installation" {
         It "Should install module from local path" {
-            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent } | Should -Not -Throw
+            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath } | Should -Not -Throw
             
             # With version-specific directories, module will be in TestInstallPath/TestModule/1.0.0/
             $moduleBasePath = Join-Path $script:TestInstallPath "TestModule"
@@ -84,7 +84,7 @@ Describe "Install-DevModule" {
         }
         
         It "Should create metadata for installed module" {
-            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent -Force
+            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -Force
             
             $metadataPath = Join-Path $script:TestInstallPath ".metadata"
             $metadataFile = Join-Path $metadataPath "TestModule.json"
@@ -98,18 +98,18 @@ Describe "Install-DevModule" {
         
         It "Should not overwrite existing module without Force" {
             # First installation
-            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent -Force
+            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -Force
             
             # Second installation without Force should fail
-            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent } | Should -Throw
+            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath } | Should -Throw
         }
         
         It "Should overwrite existing module with Force" {
             # First installation
-            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent -Force
+            Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -Force
             
             # Second installation with Force should succeed
-            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -LogLevel Silent -Force } | Should -Not -Throw
+            { Install-DevModule -SourcePath $script:MockModulePath -InstallPath $script:TestInstallPath -Force } | Should -Not -Throw
         }
     }
     
@@ -120,7 +120,7 @@ Describe "Install-DevModule" {
                 throw "Network call blocked in test" 
             }
             
-            { Install-DevModule -GitHubRepo "user/repo" -InstallPath $script:TestInstallPath -LogLevel Silent } | Should -Throw "*Network call blocked in test*"
+            { Install-DevModule -GitHubRepo "user/repo" -InstallPath $script:TestInstallPath } | Should -Throw "*Network call blocked in test*"
         }
         
         It "Should handle different GitHub URL formats" {
@@ -130,8 +130,8 @@ Describe "Install-DevModule" {
             }
             
             # These should all parse correctly before hitting the network call
-            { Install-DevModule -GitHubRepo "microsoft/powershell" -InstallPath $script:TestInstallPath -LogLevel Silent } | Should -Throw "*Network call blocked in test*"
-            { Install-DevModule -GitHubRepo "https://github.com/microsoft/powershell" -InstallPath $script:TestInstallPath -LogLevel Silent } | Should -Throw "*Network call blocked in test*"
+            { Install-DevModule -GitHubRepo "microsoft/powershell" -InstallPath $script:TestInstallPath } | Should -Throw "*Network call blocked in test*"
+            { Install-DevModule -GitHubRepo "https://github.com/microsoft/powershell" -InstallPath $script:TestInstallPath } | Should -Throw "*Network call blocked in test*"
         }
     }
 }

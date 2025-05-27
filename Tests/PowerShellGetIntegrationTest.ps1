@@ -46,7 +46,7 @@ Write-Host "   ✓ Test module created at $TestModulePath" -ForegroundColor Gree
 # Test installation WITHOUT PowerShellGet registration
 Write-Host "`n2. Testing normal installation (without PowerShellGet)..." -ForegroundColor Yellow
 try {
-    $normalInstall = Install-DevModule -SourcePath $TestModulePath -Force -LogLevel Silent
+    $normalInstall = Install-DevModule -SourcePath $TestModulePath -Force
     if ($normalInstall) {
         Write-Host "   ✓ Normal installation successful" -ForegroundColor Green
         
@@ -59,7 +59,7 @@ try {
         }
         
         # Remove it
-        Uninstall-DevModule -Name "TestPowerShellGetModule" -Force -LogLevel Silent
+        Uninstall-DevModule -Name "TestPowerShellGetModule" -Force
         Write-Host "   ✓ Normal installation test module removed" -ForegroundColor Green
     }
 } catch {
@@ -69,7 +69,7 @@ try {
 # Test installation WITH PowerShellGet registration
 Write-Host "`n3. Testing installation with PowerShellGet registration..." -ForegroundColor Yellow
 try {
-    $psgetInstall = Install-DevModule -SourcePath $TestModulePath -RegisterWithPowerShellGet -Force -LogLevel Normal
+    $psgetInstall = Install-DevModule -SourcePath $TestModulePath -RegisterWithPowerShellGet -Force
     if ($psgetInstall) {
         Write-Host "   ✓ PowerShellGet installation successful" -ForegroundColor Green
         
@@ -85,7 +85,7 @@ try {
         }
         
         # Test that it also appears in our own Get-InstalledDevModule
-        $inDevModules = Get-InstalledDevModule -Name "TestPowerShellGetModule" -LogLevel Silent
+        $inDevModules = Get-InstalledDevModule -Name "TestPowerShellGetModule"
         if ($inDevModules) {
             Write-Host "   ✓ Module also appears in Get-InstalledDevModule" -ForegroundColor Green
         } else {
@@ -94,12 +94,12 @@ try {
         
         # Test removal
         Write-Host "`n4. Testing removal (should clean up PowerShellGet too)..." -ForegroundColor Yellow
-        Uninstall-DevModule -Name "TestPowerShellGetModule" -Force -LogLevel Normal
+        Uninstall-DevModule -Name "TestPowerShellGetModule" -Force
         
         # Verify it's gone from both systems
         Start-Sleep 1
         $inPSGetAfter = Get-InstalledModule -Name "TestPowerShellGetModule" -ErrorAction SilentlyContinue
-        $inDevModulesAfter = Get-InstalledDevModule -Name "TestPowerShellGetModule" -LogLevel Silent
+        $inDevModulesAfter = Get-InstalledDevModule -Name "TestPowerShellGetModule"
         
         if (-not $inPSGetAfter -and -not $inDevModulesAfter) {
             Write-Host "   ✓ Module successfully removed from both systems!" -ForegroundColor Green

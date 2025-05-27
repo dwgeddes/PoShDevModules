@@ -67,7 +67,7 @@ Write-Host "`n4. Output Design Compliance" -ForegroundColor Yellow
 Write-Host "   Testing return types:" -ForegroundColor Cyan
 
 try {
-    $getResult = Get-InstalledDevModule -LogLevel Silent
+    $getResult = Get-InstalledDevModule
     $returnType = if ($getResult) { $getResult[0].GetType().Name } else { "Empty Collection" }
     Write-Host "     Get-InstalledDevModule returns: $returnType ✓" -ForegroundColor Green
 } catch {
@@ -82,7 +82,7 @@ $testResults = @()
 # Test Direct Parameter Execution
 Write-Host "   Direct Parameter Execution:" -ForegroundColor Cyan
 try {
-    $directResult = Get-InstalledDevModule -LogLevel Silent
+    $directResult = Get-InstalledDevModule
     $testResults += "✓ Direct parameters work"
     Write-Host "     ✓ Get-InstalledDevModule with direct parameters" -ForegroundColor Green
 } catch {
@@ -107,7 +107,7 @@ Write-Host "     Functions supporting interactive execution: $($functionsWithout
 Write-Host "   Pipeline Execution:" -ForegroundColor Cyan
 try {
     $testObj = [PSCustomObject]@{ Name = "TestModule" }
-    $pipelineResult = $testObj | Get-InstalledDevModule -LogLevel Silent
+    $pipelineResult = $testObj | Get-InstalledDevModule
     Write-Host "     ✓ Pipeline execution works" -ForegroundColor Green
 } catch {
     Write-Host "     ✗ Pipeline execution failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -124,13 +124,15 @@ foreach ($functionName in $PublicFunctions) {
     
     foreach ($paramName in $cmd.Parameters.Keys) {
         $param = $cmd.Parameters[$paramName]
+        
+        # Check for validation attributes
         $hasValidation = $param.Attributes | Where-Object { 
             $_ -is [System.Management.Automation.ValidateNotNullOrEmptyAttribute] -or
             $_ -is [System.Management.Automation.ValidateScriptAttribute] -or
             $_ -is [System.Management.Automation.ValidateSetAttribute]
         }
         
-        if ($hasValidation -and $paramName -in @('Name', 'SourcePath', 'GitHubRepo', 'InstallPath', 'LogLevel', 'Branch', 'PersonalAccessToken')) {
+        if ($hasValidation -and $paramName -in @('Name', 'SourcePath', 'GitHubRepo', 'InstallPath', 'Branch', 'PersonalAccessToken')) {
             $validatedParams += $paramName
         }
     }

@@ -17,7 +17,7 @@ if (-not (Test-Path $TestModulePath)) {
 Write-Host "`n1. Testing Install-DevModule (Direct Parameter Execution)" -ForegroundColor Yellow
 try {
     Write-Host "   Installing from local path..." -ForegroundColor Cyan
-    $result = Install-DevModule -SourcePath $TestModulePath -LogLevel Silent
+    $result = Install-DevModule -SourcePath $TestModulePath
     if ($result) {
         Write-Host "   ✓ Install returned module object: $($result.Name)" -ForegroundColor Green
     } else {
@@ -32,7 +32,7 @@ Write-Host "`n2. Testing Get-InstalledDevModule (All Three Methods)" -Foreground
 # Direct parameter execution
 Write-Host "   Direct Parameter:" -ForegroundColor Cyan
 try {
-    $modules = Get-InstalledDevModule -LogLevel Silent
+    $modules = Get-InstalledDevModule
     Write-Host "   ✓ Direct execution works, found $($modules.Count) modules" -ForegroundColor Green
 } catch {
     Write-Host "   ✗ Direct execution failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -58,7 +58,7 @@ Write-Host "   Pipeline Execution:" -ForegroundColor Cyan
 try {
     # Create test object for pipeline
     $testObject = [PSCustomObject]@{ Name = "TestModule" }
-    $result = $testObject | Get-InstalledDevModule -LogLevel Silent
+    $result = $testObject | Get-InstalledDevModule
     Write-Host "   ✓ Pipeline execution works" -ForegroundColor Green
 } catch {
     Write-Host "   ✗ Pipeline execution failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -77,7 +77,7 @@ try {
         # Test actual pipeline (would need existing module)
         $testObject = [PSCustomObject]@{ Name = "NonExistentModule" }
         try {
-            $result = $testObject | Update-DevModule -LogLevel Silent -ErrorAction SilentlyContinue
+            $result = $testObject | Update-DevModule -ErrorAction SilentlyContinue
             Write-Host "   ✓ Pipeline execution structure works" -ForegroundColor Green
         } catch {
             Write-Host "   ⚠ Pipeline execution test (expected to fail with non-existent module)" -ForegroundColor Yellow
@@ -142,7 +142,7 @@ Write-Host "   Checking return types:" -ForegroundColor Cyan
 
 try {
     # Get-InstalledDevModule should return array/objects
-    $result = Get-InstalledDevModule -LogLevel Silent
+    $result = Get-InstalledDevModule
     if ($result -is [Array] -or $result -eq $null -or $result.PSObject) {
         Write-Host "   ✓ Get-InstalledDevModule returns proper objects" -ForegroundColor Green
     } else {

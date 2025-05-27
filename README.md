@@ -90,11 +90,6 @@ Install-DevModule -GitHubRepo "user/repo" -ModuleSubPath "src/MyModule"
 Install-DevModule -SourcePath "/path/to/module" -SkipImport
 ```
 
-### Logging Levels
-```powershell
-Install-DevModule -GitHubRepo "user/repo" -LogLevel "Verbose"
-```
-
 ## Module Structure
 
 ```
@@ -113,7 +108,7 @@ PoShDevModules/
     ├── Update-DevModuleFromGitHub.ps1
     ├── Save-ModuleMetadata.ps1
     ├── Get-GitHubRepoInfo.ps1
-    └── Write-LogMessage.ps1
+    └── Invoke-StandardErrorHandling.ps1
 ```
 
 ## Migration from DevModules.ps1

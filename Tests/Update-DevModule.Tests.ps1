@@ -70,13 +70,13 @@ Describe "Update-DevModule" {
     Context "Parameter Validation" {
         It "Should handle valid module names gracefully when source fails" {
             # This should throw for invalid source path
-            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -LogLevel Silent -Force } | Should -Throw "*Failed to update module from local source*"
+            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -Force } | Should -Throw "*Failed to update module from local source*"
         }
         
         It "Should handle non-existent modules gracefully" {
             # This should write an error but not throw
             $ErrorActionPreference = 'SilentlyContinue'
-            $result = Update-DevModule -Name "NonExistentModule" -InstallPath $script:TestInstallPath -LogLevel Silent -Force 2>&1
+            $result = Update-DevModule -Name "NonExistentModule" -InstallPath $script:TestInstallPath -Force 2>&1
             $ErrorActionPreference = 'Continue'
             $errorRecord = $result | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }
             $errorRecord.Exception.Message | Should -Match "is not installed"
@@ -92,7 +92,7 @@ Describe "Update-DevModule" {
         
         It "Should handle missing source paths gracefully" {
             # The update should fail with an exception when source path doesn't exist
-            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -LogLevel Silent -Force } | Should -Throw "*Source path no longer exists*"
+            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -Force } | Should -Throw "*Source path no longer exists*"
         }
     }
     
@@ -108,7 +108,7 @@ Describe "Update-DevModule" {
     Context "Error Handling" {
         It "Should handle invalid install paths" {
             $ErrorActionPreference = 'SilentlyContinue'
-            $result = Update-DevModule -Name "TestModule" -InstallPath "/nonexistent/path" -LogLevel Silent -Force 2>&1
+            $result = Update-DevModule -Name "TestModule" -InstallPath "/nonexistent/path" -Force 2>&1
             $ErrorActionPreference = 'Continue'
             $errorRecord = $result | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }
             $errorRecord.Exception.Message | Should -Match "is not installed"
@@ -118,7 +118,7 @@ Describe "Update-DevModule" {
             $corruptedMetadataPath = Join-Path $script:MetadataPath "Corrupted.json"
             "{ invalid json" | Set-Content $corruptedMetadataPath
             
-            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -LogLevel Silent -Force } | Should -Throw
+            { Update-DevModule -Name "TestModule" -InstallPath $script:TestInstallPath -Force } | Should -Throw
         }
     }
 }

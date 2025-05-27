@@ -102,7 +102,7 @@ function Install-DevModule {
         try {
             switch ($PSCmdlet.ParameterSetName) {
                 'Local' {
-                    Install-DevModuleFromLocal -SourcePath $SourcePath -InstallPath $InstallPath -Force:$Force -SkipImport:$SkipImport -LogLevel $LogLevel
+                    Install-DevModuleFromLocal -SourcePath $SourcePath -InstallPath $InstallPath -Force:$Force -SkipImport:$SkipImport
                 }
                 'GitHub' {
                     $params = @{
@@ -111,7 +111,6 @@ function Install-DevModule {
                         InstallPath = $InstallPath
                         Force = $Force
                         SkipImport = $SkipImport
-                        LogLevel = $LogLevel
                     }
                     if ($ModuleSubPath) { $params.ModuleSubPath = $ModuleSubPath }
                     if ($PersonalAccessToken) { $params.PersonalAccessToken = $PersonalAccessToken }

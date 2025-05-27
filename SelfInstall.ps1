@@ -159,4 +159,3 @@ try {
 
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
-Write-LogMessage "Installation complete!" "Success"

@@ -92,21 +92,21 @@ Describe "Uninstall-DevModule" {
         }
         
         It "Should remove module directory" {
-            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent
+            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force
             
             $modulePath = Join-Path $script:TestInstallPath "TestRemovalModule"
             Test-Path $modulePath | Should -Be $false
         }
         
         It "Should remove module metadata" {
-            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent
+            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "TestRemovalModule.json"
             Test-Path $metadataFile | Should -Be $false
         }
         
         It "Should not be listed in installed modules after removal" {
-            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent
+            Uninstall-DevModule -Name "TestRemovalModule" -InstallPath $script:TestInstallPath -Force
             
             $installedModules = Get-InstalledDevModule -InstallPath $script:TestInstallPath
             $installedModules.Name | Should -Not -Contain "TestRemovalModule"
@@ -116,7 +116,7 @@ Describe "Uninstall-DevModule" {
     Context "Error Handling" {
         It "Should write error when module doesn't exist" {
             $ErrorActionPreference = 'SilentlyContinue'
-            $result = Uninstall-DevModule -Name "NonexistentModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent 2>&1
+            $result = Uninstall-DevModule -Name "NonexistentModule" -InstallPath $script:TestInstallPath -Force 2>&1
             $ErrorActionPreference = 'Continue'
             $result | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | Should -Not -BeNullOrEmpty
         }
@@ -129,7 +129,7 @@ Describe "Uninstall-DevModule" {
             Remove-Item -Path $modulePath -Recurse -Force
             
             # Should still succeed and clean up metadata
-            { Uninstall-DevModule -Name "MissingDirModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent } | Should -Not -Throw
+            { Uninstall-DevModule -Name "MissingDirModule" -InstallPath $script:TestInstallPath -Force } | Should -Not -Throw
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "MissingDirModule.json"
             Test-Path $metadataFile | Should -Be $false
@@ -144,7 +144,7 @@ Describe "Uninstall-DevModule" {
             
             # Should fail since Get-InstalledDevModule won't find it
             $ErrorActionPreference = 'SilentlyContinue'
-            $result = Uninstall-DevModule -Name "MissingMetadataModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent 2>&1
+            $result = Uninstall-DevModule -Name "MissingMetadataModule" -InstallPath $script:TestInstallPath -Force 2>&1
             $ErrorActionPreference = 'Continue'
             $result | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | Should -Not -BeNullOrEmpty
         }
@@ -164,7 +164,7 @@ Describe "Uninstall-DevModule" {
         }
         
         It "Should proceed when Force is specified" {
-            Uninstall-DevModule -Name "ConfirmationTestModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent
+            Uninstall-DevModule -Name "ConfirmationTestModule" -InstallPath $script:TestInstallPath -Force
             
             $modulePath = Join-Path $script:TestInstallPath "ConfirmationTestModule"
             Test-Path $modulePath | Should -Be $false
@@ -178,7 +178,7 @@ Describe "Uninstall-DevModule" {
         
         It "Should attempt to remove module from session" {
             # This test verifies the code path exists, actual session cleanup is hard to test
-            { Uninstall-DevModule -Name "SessionTestModule" -InstallPath $script:TestInstallPath -Force -LogLevel Silent } | Should -Not -Throw
+            { Uninstall-DevModule -Name "SessionTestModule" -InstallPath $script:TestInstallPath -Force } | Should -Not -Throw
         }
     }
 }
