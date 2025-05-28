@@ -40,14 +40,13 @@ param(
 
 $ErrorActionPreference = 'Continue'
 $TestsPath = $PSScriptRoot
-$ModulePath = Split-Path $PSScriptRoot -Parent
 
-Write-Host "PoShDevModules Complete Test Suite" -ForegroundColor Cyan
-Write-Host "=" * 40 -ForegroundColor Cyan
-Write-Host "Test Type: $TestType" -ForegroundColor Gray
-Write-Host "Skip Self-Install: $SkipSelfInstall" -ForegroundColor Gray
-Write-Host "Quick Mode: $Quick" -ForegroundColor Gray
-Write-Host ""
+Write-Information "PoShDevModules Complete Test Suite" -InformationAction Continue
+Write-Information "========================================" -InformationAction Continue
+Write-Information "Test Type: $TestType" -InformationAction Continue
+Write-Information "Skip Self-Install: $SkipSelfInstall" -InformationAction Continue
+Write-Information "Quick Mode: $Quick" -InformationAction Continue
+Write-Information "" -InformationAction Continue
 
 $AllTestResults = @{
     TotalSuites = 0
@@ -63,9 +62,9 @@ function Invoke-TestSuite {
     )
     
     $AllTestResults.TotalSuites++
-    Write-Host ""
-    Write-Host "Running $SuiteName..." -ForegroundColor Yellow
-    Write-Host "-" * 30 -ForegroundColor Yellow
+    Write-Information "" -InformationAction Continue
+    Write-Information "Running $SuiteName..." -InformationAction Continue
+    Write-Information "------------------------------" -InformationAction Continue
     
     try {
         $result = & $TestCode
@@ -73,12 +72,12 @@ function Invoke-TestSuite {
             throw "Test suite failed with exit code $LASTEXITCODE"
         }
         $AllTestResults.PassedSuites++
-        Write-Host "✓ $SuiteName completed successfully" -ForegroundColor Green
+        Write-Information "✓ $SuiteName completed successfully" -InformationAction Continue
         return $true
     } catch {
         $AllTestResults.FailedSuites++
         $AllTestResults.Errors += "$SuiteName`: $($_.Exception.Message)"
-        Write-Host "✗ $SuiteName failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Information "✗ $SuiteName failed: $($_.Exception.Message)" -InformationAction Continue
         return $false
     }
 }
@@ -87,7 +86,7 @@ function Invoke-TestSuite {
 try {
     Import-Module Pester -MinimumVersion 5.0 -ErrorAction Stop
     $PesterAvailable = $true
-    Write-Host "✓ Pester 5.0+ available" -ForegroundColor Green
+    Write-Information "✓ Pester 5.0+ available" -InformationAction Continue
 } catch {
     Write-Warning "Pester 5.0+ not available. Pester-based tests will be skipped."
     $PesterAvailable = $false
@@ -158,13 +157,13 @@ foreach ($SuiteKey in $SuitesToRun) {
     
     # Skip self-install tests if requested
     if ($SuiteKey -eq "SelfInstall" -and $SkipSelfInstall) {
-        Write-Host "Skipping $($Suite.Name) (SkipSelfInstall flag set)" -ForegroundColor Yellow
+        Write-Information "Skipping $($Suite.Name) (SkipSelfInstall flag set)" -InformationAction Continue
         continue
     }
     
     # Skip Pester tests if Pester is not available
     if ($Suite.RequiresPester -and -not $PesterAvailable) {
-        Write-Host "Skipping $($Suite.Name) (Pester not available)" -ForegroundColor Yellow
+        Write-Information "Skipping $($Suite.Name) (Pester not available)" -InformationAction Continue
         continue
     }
     
@@ -183,35 +182,38 @@ if (-not $Quick -and -not $SkipSelfInstall -and ($TestType -eq "All" -or $TestTy
         if (Test-Path $quickValidationScript) {
             & $quickValidationScript
         } else {
-            Write-Host "QuickSelfInstallValidation.ps1 not found - using integrated validation" -ForegroundColor Yellow
+            Write-Information "QuickSelfInstallValidation.ps1 not found - using integrated validation" -InformationAction Continue
             return $true
         }
     }
 }
 
 # Final Results Summary
-Write-Host ""
-Write-Host "=" * 40 -ForegroundColor Cyan
-Write-Host "Test Results Summary" -ForegroundColor Cyan
-Write-Host "=" * 40 -ForegroundColor Cyan
-Write-Host "Total Test Suites: $($AllTestResults.TotalSuites)" -ForegroundColor Gray
-Write-Host "Passed: $($AllTestResults.PassedSuites)" -ForegroundColor Green
-Write-Host "Failed: $($AllTestResults.FailedSuites)" -ForegroundColor Red
+Write-Information "" -InformationAction Continue
+Write-Information "========================================" -InformationAction Continue
+Write-Information "Test Results Summary" -InformationAction Continue
+Write-Information "========================================" -InformationAction Continue
+Write-Information "Total Test Suites: $($AllTestResults.TotalSuites)" -InformationAction Continue
+Write-Information "Passed: $($AllTestResults.PassedSuites)" -InformationAction Continue
+Write-Information "Failed: $($AllTestResults.FailedSuites)" -InformationAction Continue
 
 if ($AllTestResults.Errors.Count -gt 0) {
-    Write-Host ""
-    Write-Host "Errors encountered:" -ForegroundColor Red
+    Write-Information "" -InformationAction Continue
+    Write-Information "Errors encountered:" -InformationAction Continue
     foreach ($testError in $AllTestResults.Errors) {
-        Write-Host "  - $testError" -ForegroundColor Red
+        Write-Information "  - $testError" -InformationAction Continue
     }
 }
 
 if ($AllTestResults.FailedSuites -eq 0) {
-    Write-Host ""
-    Write-Host "🎉 All tests passed!" -ForegroundColor Green
+    Write-Information "" -InformationAction Continue
+    Write-Information "All tests passed!" -InformationAction Continue
     exit 0
 } else {
-    Write-Host ""
-    Write-Host "❌ Some tests failed. Check the output above for details." -ForegroundColor Red
+    Write-Information "" -InformationAction Continue
+    Write-Information "Some tests failed. Check the output above for details." -InformationAction Continue
     exit 1
 }
+
+# Ensure BOM encoding for UTF-8
+Set-Content -Path $PSCommandPath -Encoding UTF8 -Force

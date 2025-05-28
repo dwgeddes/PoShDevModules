@@ -112,7 +112,7 @@ function Update-DevModuleFromGitHub {
 
             # Copy updated files
             if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
-                Copy-Item -Path "$sourcePath\*" -Destination $newDestinationPath -Recurse -Force
+                Copy-Item -Path (Join-Path $sourcePath '*') -Destination $newDestinationPath -Recurse -Force
                 Write-Verbose "Copied updated module files"
             }
 

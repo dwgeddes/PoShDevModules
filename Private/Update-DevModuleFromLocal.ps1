@@ -35,16 +35,12 @@ function Update-DevModuleFromLocal {
         Write-Verbose "Found module manifest: $($manifestFile.Name)"
         Write-Verbose "Updating to version: $newVersion"
 
-        # Extract install base path from Module.InstallPath (remove old version directory if present)
-        $installBasePath = Split-Path $Module.InstallPath -Parent
-        if ((Split-Path $installBasePath -Leaf) -eq $Module.Name) {
-            # Module.InstallPath was already the base path
-            $moduleBasePath = $Module.InstallPath
-            $installBasePath = Split-Path $moduleBasePath -Parent
-        } else {
-            # Module.InstallPath included version directory
-            $moduleBasePath = Join-Path $installBasePath $Module.Name
-        }
+        # Extract install base path from Module.InstallPath 
+        # Module.InstallPath should point to the version-specific directory
+        # e.g., /path/to/Modules/ModuleName/1.0.0
+        $versionPath = $Module.InstallPath
+        $moduleBasePath = Split-Path $versionPath -Parent  # /path/to/Modules/ModuleName
+        $installBasePath = Split-Path $moduleBasePath -Parent  # /path/to/Modules
 
         # Create new version-specific destination path
         $newDestinationPath = Join-Path $moduleBasePath $newVersion
@@ -65,7 +61,7 @@ function Update-DevModuleFromLocal {
 
         # Copy updated files
         if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
-            Copy-Item -Path "$($Module.SourcePath)\*" -Destination $newDestinationPath -Recurse -Force
+            Copy-Item -Path (Join-Path $Module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
             Write-Verbose "Copied updated module files"
         }
 

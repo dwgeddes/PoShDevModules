@@ -30,40 +30,29 @@ function Test-StandardParameter {
         [string]$InstallPath
     )
     
-    $validationErrors = @()
-    
-    # Validate GitHub repository format
+    # Improved parameter validation
     if ($GitHubRepo) {
         if (-not ($GitHubRepo -match '^([^/]+)/([^/]+)$|^https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$')) {
-            $validationErrors += "Invalid GitHub repository format. Expected 'owner/repo' or full GitHub URL."
+            throw [System.ArgumentException]::new("Invalid GitHub repository format. Expected 'owner/repo' or full GitHub URL.")
         }
     }
-    
-    # Validate source path exists and is a directory
+
     if ($SourcePath) {
         if (-not (Test-Path $SourcePath -PathType Container)) {
-            $validationErrors += "Source path does not exist or is not a directory: $SourcePath"
+            throw [System.ArgumentException]::new("Source path does not exist or is not a directory: $SourcePath")
         }
     }
-    
-    # Validate module name format
+
     if ($ModuleName) {
         if (-not ($ModuleName -match '^[a-zA-Z][a-zA-Z0-9._-]*$')) {
-            $validationErrors += "Invalid module name format. Module names must start with a letter and contain only letters, numbers, dots, hyphens, and underscores."
+            throw [System.ArgumentException]::new("Invalid module name format. Module names must start with a letter and contain only letters, numbers, dots, hyphens, and underscores.")
         }
     }
-    
-    # Validate install path (parent directory must exist)
+
     if ($InstallPath) {
         $parentPath = Split-Path $InstallPath -Parent
         if ($parentPath -and -not (Test-Path $parentPath -PathType Container)) {
-            $validationErrors += "Parent directory of install path does not exist: $parentPath"
+            throw [System.ArgumentException]::new("Parent directory of install path does not exist: $parentPath")
         }
-    }
-    
-    # Throw aggregated validation errors if any
-    if ($validationErrors.Count -gt 0) {
-        $errorMessage = "Parameter validation failed:`n" + ($validationErrors -join "`n")
-        throw [System.ArgumentException]::new($errorMessage)
     }
 }

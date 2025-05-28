@@ -118,7 +118,7 @@ function Install-DevModuleFromGitHub {
             New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
 
             # Copy module files
-            Copy-Item -Path "$sourcePath\*" -Destination $destinationPath -Recurse -Force
+            Copy-Item -Path (Join-Path $sourcePath '*') -Destination $destinationPath -Recurse -Force
             Write-Verbose "Copied module files to: $destinationPath"
 
             # Save metadata

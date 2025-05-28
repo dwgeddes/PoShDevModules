@@ -95,7 +95,7 @@ function Uninstall-DevModule {
                 $decision = $Host.UI.PromptForChoice($title, $message, $choices, 1)
                 
                 if ($decision -ne 0) {
-                    Write-Host "Module uninstall cancelled by user." -ForegroundColor Yellow
+                    Write-Information "Module uninstall cancelled by user." -InformationAction Continue
                     return
                 }
             }
@@ -124,7 +124,7 @@ function Uninstall-DevModule {
                     Write-Warning "Could not remove module '$Name' from current session: $($_.Exception.Message)"
                 }
 
-                Write-Host "Successfully uninstalled module: $Name" -ForegroundColor Green
+                Write-Information "Successfully uninstalled module: $Name" -InformationAction Continue
                 
                 # Return the uninstalled module object
                 return $moduleToRemove

@@ -1,4 +1,4 @@
-#Requires -Modules Pester
+﻿#Requires -Modules Pester
 
 <#
 .SYNOPSIS
@@ -64,11 +64,11 @@ Export-ModuleMember -Function Test-PowerShellGetFunction
     Context "Normal Installation (without PowerShellGet)" {
         It "Should install normally without PowerShellGet registration" {
             try {
-                $result = Install-DevModule -SourcePath $script:TestModulePath -Force
+                $result = Install-DevModule -Name "TestPowerShellGetModule" -SourcePath $script:TestModulePath -Force
                 $result | Should -Not -BeNullOrEmpty
-                Write-Host "✓ Normal installation successful" -ForegroundColor Green
+                Write-Information "✓ Normal installation successful" -InformationAction Continue
             } catch {
-                Write-Host "Expected behavior: Module installs without PowerShellGet registration" -ForegroundColor Yellow
+                Write-Information "Expected behavior: Module installs without PowerShellGet registration" -InformationAction Continue
                 $_.Exception.Message | Should -Not -BeNullOrEmpty
             }
         }
@@ -76,7 +76,7 @@ Export-ModuleMember -Function Test-PowerShellGetFunction
         It "Should not be registered with PowerShellGet by default" {
             # Install the module
             try {
-                Install-DevModule -SourcePath $script:TestModulePath -Force | Out-Null
+                Install-DevModule -Name "TestPowerShellGetModule" -SourcePath $script:TestModulePath -Force | Out-Null
                 
                 # Check if it's registered with PowerShellGet
                 $psGetModule = Get-Module -ListAvailable TestPowerShellGetModule -ErrorAction SilentlyContinue
@@ -85,7 +85,7 @@ Export-ModuleMember -Function Test-PowerShellGetFunction
                     $psGetModule.ModuleBase | Should -Not -Match "PowerShellGallery|PSGallery"
                 }
             } catch {
-                Write-Host "Expected: Module installation may have validation requirements" -ForegroundColor Yellow
+                Write-Information "Expected: Module installation may have validation requirements" -InformationAction Continue
             }
         }
     }
@@ -99,9 +99,9 @@ Export-ModuleMember -Function Test-PowerShellGetFunction
             try {
                 # Just test the command exists and accepts parameters
                 $command | Should -Not -BeNullOrEmpty
-                Write-Host "✓ PowerShellGet integration API ready" -ForegroundColor Green
+                Write-Information "✓ PowerShellGet integration API ready" -InformationAction Continue
             } catch {
-                Write-Host "Expected: PowerShellGet integration not yet fully implemented" -ForegroundColor Yellow
+                Write-Information "Expected: PowerShellGet integration not yet fully implemented" -InformationAction Continue
             }
         }
     }
@@ -181,7 +181,7 @@ Describe "Module Architecture Validation" {
                 # Should return empty result, not throw
                 $true | Should -Be $true
             } catch {
-                Write-Host "Expected: Function handles non-existent modules gracefully" -ForegroundColor Yellow
+                Write-Information "Expected: Function handles non-existent modules gracefully" -InformationAction Continue
                 $_.Exception.Message | Should -Not -BeNullOrEmpty
             }
         }
@@ -191,7 +191,7 @@ Describe "Module Architecture Validation" {
                 Install-DevModule -SourcePath "/completely/invalid/path/that/does/not/exist" -Force
                 throw "Should have failed with invalid path"
             } catch {
-                Write-Host "Expected error: Invalid source path" -ForegroundColor Yellow
+                Write-Information "Expected error: Invalid source path" -InformationAction Continue
                 $_.Exception.Message | Should -Match "path|exist|source|invalid"
             }
         }
@@ -209,12 +209,13 @@ Describe "Cross-Platform Compatibility" {
             }
             
             # Test that path resolution works
+            $devModulesPath | Should -Not -BeNullOrEmpty
             try {
                 $modules = Get-InstalledDevModule
                 # Should not throw, even if empty
                 $modules | Should -Not -Be $null
             } catch {
-                Write-Host "Expected: Cross-platform path handling may need refinement" -ForegroundColor Yellow
+                Write-Information "Expected: Cross-platform path handling may need refinement" -InformationAction Continue
             }
         }
         
@@ -237,7 +238,7 @@ Describe "Cross-Platform Compatibility" {
                 # Test that operations handle permissions gracefully
                 $true | Should -Be $true  # Basic test that setup works
             } catch {
-                Write-Host "Expected: File system operations handle permissions gracefully" -ForegroundColor Yellow
+                Write-Information "Expected: File system operations handle permissions gracefully" -InformationAction Continue
             } finally {
                 if (Test-Path $testPath) {
                     Remove-Item -Path $testPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -258,10 +259,10 @@ Describe "Performance and Reliability" {
                 
                 # Should complete within 10 seconds
                 $stopwatch.ElapsedMilliseconds | Should -BeLessThan 10000
-                Write-Host "✓ Performance test passed: $($stopwatch.ElapsedMilliseconds)ms" -ForegroundColor Green
+                Write-Information "✓ Performance test passed: $($stopwatch.ElapsedMilliseconds)ms" -InformationAction Continue
             } catch {
                 $stopwatch.Stop()
-                Write-Host "Expected: Performance test completed in $($stopwatch.ElapsedMilliseconds)ms" -ForegroundColor Yellow
+                Write-Information "Expected: Performance test completed in $($stopwatch.ElapsedMilliseconds)ms" -InformationAction Continue
             }
         }
     }
@@ -281,9 +282,9 @@ Describe "Performance and Reliability" {
                 
                 # Should not have leaked processes
                 $finalProcesses | Should -BeLessOrEqual ($initialProcesses + 2)  # Allow some margin
-                Write-Host "✓ Resource management test passed" -ForegroundColor Green
+                Write-Information "✓ Resource management test passed" -InformationAction Continue
             } catch {
-                Write-Host "Expected: Resource management test completed with monitoring" -ForegroundColor Yellow
+                Write-Information "Expected: Resource management test completed with monitoring" -InformationAction Continue
             }
         }
     }

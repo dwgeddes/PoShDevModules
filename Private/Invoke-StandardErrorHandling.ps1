@@ -51,24 +51,19 @@ function Invoke-StandardErrorHandling {
         }
     }
     
-    # Format error message with context
-    $errorMessage = "Failed to $Operation`: $($ErrorRecord.Exception.Message)"
-    
-    # Log the full error details for debugging
+    # Enhanced error handling
+    $errorMessage = "Failed to $Operation: $($ErrorRecord.Exception.Message)"
     Write-Error $errorMessage
     Write-Verbose "Full error details: $($ErrorRecord | Out-String)"
     
-    # Write to host if requested (for user-facing functions)
     if ($WriteToHost) {
         Write-Error "Error: $errorMessage"
     }
     
-    # Return early for non-terminating errors
     if ($NonTerminating) {
         return
     }
     
-    # Create and throw a more informative error
     $exception = New-Object System.Exception($errorMessage, $ErrorRecord.Exception)
     $newErrorRecord = New-Object System.Management.Automation.ErrorRecord(
         $exception,
@@ -76,6 +71,5 @@ function Invoke-StandardErrorHandling {
         $ErrorRecord.CategoryInfo.Category,
         $ErrorRecord.TargetObject
     )
-    
     throw $newErrorRecord
 }

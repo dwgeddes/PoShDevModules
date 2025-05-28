@@ -97,7 +97,7 @@ AfterAll {
     try {
         Uninstall-DevModule -Name "IntegrationTestModule" -Force -ErrorAction SilentlyContinue
     } catch {
-        # Ignore cleanup errors
+        Write-Verbose "Cleanup error (expected): $($_.Exception.Message)"
     }
 }
 
@@ -157,7 +157,7 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             try {
                 Uninstall-DevModule -Name "IntegrationTestModule" -Force -ErrorAction SilentlyContinue
             } catch {
-                # Ignore cleanup errors
+                Write-Verbose "Cleanup error (expected): $($_.Exception.Message)"
             }
         }
         
@@ -175,11 +175,11 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             $module = Get-InstalledDevModule -Name "IntegrationTestModule"
             
             # Note: Update via pipeline may fail if source isn't available, but tests the pipeline structure
-            Write-Host "Expected potential error: Testing pipeline update (may fail if source unavailable)" -ForegroundColor Yellow
+            Write-Information "Expected potential error: Testing pipeline update (may fail if source unavailable)" -InformationAction Continue
             try {
                 $module | Update-DevModule
             } catch {
-                # Expected to potentially fail in test environment
+                Write-Verbose "Pipeline update error (expected in test environment): $($_.Exception.Message)"
             }
         }
         
@@ -197,7 +197,7 @@ Describe "Error Handling and Edge Cases" -Tag "Integration" {
             New-Item -Path $invalidModulePath -ItemType Directory -Force | Out-Null
             Set-Content -Path (Join-Path $invalidModulePath "somefile.txt") -Value "Not a module"
             
-            Write-Host "Expected error: Testing installation of invalid module (this should fail)" -ForegroundColor Yellow
+            Write-Information "Expected error: Testing installation of invalid module (this should fail)" -InformationAction Continue
             { Install-DevModule -SourcePath $invalidModulePath } | Should -Throw
         }
         
@@ -206,12 +206,12 @@ Describe "Error Handling and Edge Cases" -Tag "Integration" {
             New-Item -Path $corruptModulePath -ItemType Directory -Force | Out-Null
             Set-Content -Path (Join-Path $corruptModulePath "CorruptModule.psd1") -Value "This is not valid PowerShell"
             
-            Write-Host "Expected error: Testing installation of corrupt module (this should fail)" -ForegroundColor Yellow
+            Write-Information "Expected error: Testing installation of corrupt module (this should fail)" -InformationAction Continue
             { Install-DevModule -SourcePath $corruptModulePath } | Should -Throw
         }
         
         It "Should handle network unavailable for GitHub repos gracefully" {
-            Write-Host "Expected error: Testing GitHub installation with invalid repo (this should fail)" -ForegroundColor Yellow
+            Write-Information "Expected error: Testing GitHub installation with invalid repo (this should fail)" -InformationAction Continue
             { Install-DevModule -GitHubRepo "nonexistent/fake-repo-12345" } | Should -Throw
         }
     }
@@ -226,11 +226,11 @@ Describe "Error Handling and Edge Cases" -Tag "Integration" {
                 # Try to make directory read-only (may not work in all test environments)
                 try {
                     chmod 444 $readOnlyPath
-                    Write-Host "Expected error: Testing installation to read-only directory (this should fail)" -ForegroundColor Yellow
+                    Write-Information "Expected error: Testing installation to read-only directory (this should fail)" -InformationAction Continue
                     { Install-DevModule -SourcePath $script:TestModulePath -InstallPath $readOnlyPath } | Should -Throw
                 } catch {
                     # Permissions test may not work in all environments
-                    Write-Host "Permissions test skipped (not applicable in this environment)" -ForegroundColor Yellow
+                    Write-Information "Permissions test skipped (not applicable in this environment)" -InformationAction Continue
                 }
             }
         }

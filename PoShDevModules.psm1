@@ -18,26 +18,44 @@
 # Module-level variables
 $script:ModuleRoot = $PSScriptRoot
 
-# Import private functions
-$Private = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Private') -Filter '*.ps1' -ErrorAction SilentlyContinue)
+# Get private and public function files
+$PrivatePath = Join-Path $PSScriptRoot 'Private'
+$PublicPath = Join-Path $PSScriptRoot 'Public'
 
-# Import public functions  
-$Public = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Public') -Filter '*.ps1' -ErrorAction SilentlyContinue)
-
-# Dot source the files
-foreach ($import in @($Private + $Public)) {
-    try {
-        . $import.FullName
-    }
-    catch {
-        Write-Error "Failed to import function $($import.FullName): $($_.Exception.Message)"
+# Load private functions first
+if (Test-Path $PrivatePath) {
+    $PrivateFiles = Get-ChildItem -Path $PrivatePath -Filter '*.ps1' -ErrorAction SilentlyContinue
+    foreach ($file in $PrivateFiles) {
+        try {
+            Write-Verbose "Loading private function: $($file.Name)"
+            . $file.FullName
+        }
+        catch {
+            Write-Error "Failed to load private function $($file.FullName): $($_.Exception.Message)"
+            throw
+        }
     }
 }
 
-# Export the public functions
+# Load public functions second
+if (Test-Path $PublicPath) {
+    $PublicFiles = Get-ChildItem -Path $PublicPath -Filter '*.ps1' -ErrorAction SilentlyContinue
+    foreach ($file in $PublicFiles) {
+        try {
+            Write-Verbose "Loading public function: $($file.Name)"
+            . $file.FullName
+        }
+        catch {
+            Write-Error "Failed to load public function $($file.FullName): $($_.Exception.Message)"
+            throw
+        }
+    }
+}
+
+# Ensure all required functions are loaded and exported
 Export-ModuleMember -Function @(
     'Install-DevModule',
-    'Get-InstalledDevModule', 
+    'Get-InstalledDevModule',
     'Uninstall-DevModule',
     'Update-DevModule',
     'Invoke-DevModuleOperation'

@@ -68,7 +68,7 @@ function Install-DevModuleFromLocal {
         Write-Verbose "Created destination directory: $destinationPath"
 
         # Copy module files
-        Copy-Item -Path "$SourcePath\*" -Destination $destinationPath -Recurse -Force
+        Copy-Item -Path (Join-Path $SourcePath '*') -Destination $destinationPath -Recurse -Force
         Write-Verbose "Copied module files from $SourcePath to $destinationPath"
 
         # Save metadata
@@ -79,14 +79,14 @@ function Install-DevModuleFromLocal {
             try {
                 $installedManifestPath = Join-Path $destinationPath "$moduleName.psd1"
                 Import-Module $installedManifestPath -Force
-                Write-Host "Imported module: $moduleName" -ForegroundColor Green
+                Write-Information "Imported module: $moduleName" -InformationAction Continue
             }
             catch {
                 Write-Warning "Module installed but failed to import: $($_.Exception.Message)"
             }
         }
 
-        Write-Host "Successfully installed module '$moduleName' from local path" -ForegroundColor Green
+        Write-Information "Successfully installed module '$moduleName' from local path" -InformationAction Continue
         
         # Return the installed module object
         return Get-InstalledDevModule -Name $moduleName -InstallPath $InstallPath

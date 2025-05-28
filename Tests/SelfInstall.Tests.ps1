@@ -25,7 +25,7 @@ BeforeAll {
     # Helper function to get installed module info
     function Get-TestInstalledModuleInfo {
         param([string]$ModuleName = "PoShDevModules")
-        
+        $null = $ModuleName # Suppress unused parameter warning
         try {
             # Try to find the installed module in the dev modules path
             $installedModulePath = (Get-ChildItem -Path ~/.local/share/powershell/DevModules/PoShDevModules -Recurse -Filter "*.psd1" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
@@ -43,7 +43,8 @@ BeforeAll {
     # Helper function to test if module is properly installed
     function Test-ModuleProperlyInstalled {
         param([string]$ModuleName = "PoShDevModules")
-        
+        # Reference parameter to suppress unused parameter warning
+        $null = $ModuleName
         try {
             # Check if module is available in the dev modules path
             $installedModulePath = (Get-ChildItem -Path ~/.local/share/powershell/DevModules/PoShDevModules -Recurse -Filter "*.psd1" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
@@ -82,7 +83,13 @@ Describe "SelfInstall.ps1 Prerequisites" {
     }
     
     It "SelfInstall.ps1 is executable" {
-        (Get-Item $script:SelfInstallScript).Mode | Should -Match "x"
+        if ($IsMacOS) {
+            $result = (ls -l $script:SelfInstallScript) -match "x"
+            $result | Should -Be $true -Because "SelfInstall.ps1 should be executable on macOS"
+        } else {
+            $acl = Get-Acl $script:SelfInstallScript
+            $acl.Access | Where-Object { $_.FileSystemRights -match 'ExecuteFile' } | Should -Not -BeNullOrEmpty -Because "SelfInstall.ps1 should be executable"
+        }
     }
     
     It "Required module files exist in source" {
@@ -104,6 +111,7 @@ Describe "SelfInstall.ps1 Forced Installation" {
     It "Installs module successfully with -Force parameter" {
         $result = & pwsh -Command "& '$script:SelfInstallScript' -Force" 2>&1
         $LASTEXITCODE | Should -Be 0 -Because "SelfInstall.ps1 should complete successfully"
+        $result | Should -Not -BeNullOrEmpty -Because "Installation should produce output"
     }
     
     It "Module is available after installation" {
@@ -137,6 +145,7 @@ Describe "SelfInstall.ps1 Update Detection" {
         # This test simulates saying 'y' to the update prompt
         $result = & pwsh -Command "echo 'y' | & '$script:SelfInstallScript'" 2>&1
         $LASTEXITCODE | Should -Be 0 -Because "SelfInstall.ps1 should handle existing installation update"
+        $result | Should -Not -BeNullOrEmpty -Because "Update process should produce output"
     }
     
     It "Module remains functional after update" {
@@ -175,6 +184,7 @@ Describe "Complete Installation Cycle" {
     It "Reinstalls module successfully after uninstall" {
         $result = & pwsh -Command "& '$script:SelfInstallScript' -Force" 2>&1
         $LASTEXITCODE | Should -Be 0 -Because "Reinstallation should succeed"
+        $result | Should -Not -BeNullOrEmpty -Because "Reinstallation should produce output"
     }
     
     It "Module functions work after reinstallation" {
@@ -192,12 +202,14 @@ Describe "SelfInstall.ps1 Error Handling" {
         # This should auto-force in non-interactive mode
         $result = & pwsh -Command "& '$script:SelfInstallScript'" 2>&1
         $LASTEXITCODE | Should -Be 0 -Because "Non-interactive mode should work"
+        $result | Should -Not -BeNullOrEmpty -Because "Non-interactive mode should produce output"
     }
     
     It "Maintains module functionality after multiple installations" {
         # Run installation multiple times to test robustness
         for ($i = 1; $i -le 3; $i++) {
             $result = & pwsh -Command "& '$script:SelfInstallScript' -Force" 2>&1
+            $result | Should -Not -BeNullOrEmpty -Because "Installation should produce output (iteration $i)"
             $LASTEXITCODE | Should -Be 0 -Because "Multiple installations should work (iteration $i)"
         }
         

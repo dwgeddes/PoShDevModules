@@ -1,38 +1,25 @@
 <#
 .SYNOPSIS
-    Installs a PowerShell module from a local path or GitHub repository
+    Installs a development module from a local path or GitHub repository.
 
 .DESCRIPTION
-    This function installs a PowerShell module for development purposes from either
-    a local filesystem path or a GitHub repository. The module is installed to a
-    development modules directory for easy management.
+    This function facilitates the installation of development modules from local paths or GitHub repositories.
+    It supports parameter validation, error handling, and optional pipeline input.
 
 .PARAMETER SourcePath
-    Local filesystem path containing the module to install
+    The local path to the module source.
 
 .PARAMETER GitHubRepo
-    GitHub repository to install from (format: owner/repo or full URL)
-
-.PARAMETER Branch
-    Git branch to install from (default: main)
-
-.PARAMETER ModuleSubPath
-    Subdirectory within the repository containing the module
-
-.PARAMETER PersonalAccessToken
-    GitHub Personal Access Token for accessing private repositories
-
-.PARAMETER Force
-    Skip confirmation prompts and overwrite existing installations
-
-.PARAMETER SkipImport
-    Don't automatically import the module after installation
+    The GitHub repository containing the module.
 
 .PARAMETER InstallPath
-    Custom installation directory (default: ~/Documents/PowerShell/DevModules)
+    The path where the module will be installed.
 
-.EXAMPLE
-    Install-DevModule -GitHubRepo "myuser/mymodule" -PersonalAccessToken "ghp_xxxxxxxxxxxx"
+.PARAMETER Force
+    Forces the installation, overwriting existing files if necessary.
+
+.PARAMETER SkipImport
+    Skips importing the module after installation.
 
 .EXAMPLE
     Install-DevModule -SourcePath "C:\Dev\MyModule" -Force
@@ -62,7 +49,6 @@ function Install-DevModule {
         
         [switch]$Force,
         [switch]$SkipImport,
-        
         [string]$InstallPath
     )
 
@@ -78,6 +64,9 @@ function Install-DevModule {
             }
             if ($InstallPath) { 
                 $validationParams.InstallPath = $InstallPath 
+            }
+            if ($Name) {
+                $validationParams.Name = $Name
             }
             Test-StandardParameter @validationParams
         }
