@@ -76,15 +76,21 @@ $TargetPath = Get-DevModulesPath
 Write-Host "Target installation path: $TargetPath" -ForegroundColor Cyan
 
 # Check if the module is already installed
-$existingModule = Get-InstalledDevModule -Name "PoShDevModules" -InstallPath (Split-Path $TargetPath -Parent) -ErrorAction SilentlyContinue
+$existingModule = Get-InstalledDevModule -Name "PoShDevModules" -ErrorAction SilentlyContinue
 
 if ($existingModule -and -not $Force) {
     Write-Host ""
     Write-Host "PoShDevModules is already installed at: $($existingModule.InstallPath)" -ForegroundColor Yellow
-    $response = Read-Host "Do you want to update it? (y/N)"
-    if ($response -ne 'y' -and $response -ne 'Y') {
-        Write-Host "Installation cancelled." -ForegroundColor Yellow
-        exit 0
+    
+    # Check if running in interactive mode
+    if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+        $response = Read-Host "Do you want to update it? (y/N)"
+        if ($response -ne 'y' -and $response -ne 'Y') {
+            Write-Host "Installation cancelled." -ForegroundColor Yellow
+            exit 0
+        }
+    } else {
+        Write-Host "Running in non-interactive mode - forcing update..." -ForegroundColor Cyan
     }
     $Force = $true
 }
@@ -95,8 +101,7 @@ try {
     Write-Host "Installing PoShDevModules to development modules directory..." -ForegroundColor Cyan
     
     $installParams = @{
-        GitHubRepo = "dwgeddes/PoShDevModules"
-        #SourcePath = $ModuleSourcePath
+        SourcePath = $ModuleSourcePath
         Force = $Force
     }
 
@@ -120,8 +125,9 @@ try {
     # Remove the current module
     Remove-Module PoShDevModules -Force -ErrorAction SilentlyContinue
     
-    # Import from the new location
-    Import-Module PoShDevModules -Force
+    # Import from the new location using the full path
+    $installedManifestPath = Join-Path $installedModule.InstallPath "PoShDevModules.psd1"
+    Import-Module $installedManifestPath -Force
     
     Write-Host "✓ Module reimported from installed location" -ForegroundColor Green
     

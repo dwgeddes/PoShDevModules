@@ -50,7 +50,7 @@ function Get-InstalledDevModule {
 
     process {
         try {
-            $metadataPath = Join-Path $InstallPath '.metadata'
+            $metadataPath = Get-ModuleMetadataPath -InstallPath $InstallPath
             if (-not (Test-Path $metadataPath)) {
                 Write-Verbose "No metadata found. No modules installed."
                 return
@@ -61,7 +61,7 @@ function Get-InstalledDevModule {
 
             foreach ($file in $metadataFiles) {
                 try {
-                    $metadata = Get-Content $file.FullName | ConvertFrom-Json
+                    $metadata = Get-Content $file.FullName -Force | ConvertFrom-Json
                     
                     if ($Name -and $metadata.Name -ne $Name) {
                         continue

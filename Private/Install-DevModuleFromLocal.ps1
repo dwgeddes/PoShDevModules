@@ -77,7 +77,8 @@ function Install-DevModuleFromLocal {
         # Import module if requested
         if (-not $SkipImport) {
             try {
-                Import-Module $moduleName -Force
+                $installedManifestPath = Join-Path $destinationPath "$moduleName.psd1"
+                Import-Module $installedManifestPath -Force
                 Write-Host "Imported module: $moduleName" -ForegroundColor Green
             }
             catch {

@@ -81,7 +81,7 @@ function Uninstall-DevModule {
             $moduleToRemove = $module.PSObject.Copy()
 
             $modulePath = $module.InstallPath  # This is now the base module path with all versions
-            $metadataPath = Join-Path $InstallPath '.metadata'
+            $metadataPath = Get-ModuleMetadataPath -InstallPath $InstallPath
             $metadataFile = Join-Path $metadataPath "$Name.json"
 
             # Confirm removal unless Force is specified or in WhatIf mode

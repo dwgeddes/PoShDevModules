@@ -1,6 +1,12 @@
 <#
 .SYNOPSIS
-    Saves metadata about an installed module
+    Saves metadata about an insta    try {
+        # Ensure metadata directory exists
+        $metadataPath = Get-ModuleMetadataPath -InstallPath $InstallPath
+        if (-not (Test-Path $metadataPath)) {
+            New-Item -Path $metadataPath -ItemType Directory -Force | Out-Null
+            Write-Verbose "Created metadata directory: $metadataPath"
+        }dule
 
 .DESCRIPTION
     Internal function to save metadata about an installed module for tracking and update purposes
@@ -124,7 +130,7 @@ function Save-ModuleManifest {
 
         # Save metadata
         $metadataFile = Join-Path $metadataPath "$ModuleName.json"
-        $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile
+        $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile -Force
 
         Write-Verbose "Saved module metadata to: $metadataFile"
     }

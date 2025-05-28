@@ -108,17 +108,17 @@ function Update-DevModule {
                 }
 
                 # Update the metadata LastUpdated timestamp
-                $metadataPath = Join-Path $InstallPath '.metadata'
+                $metadataPath = Get-ModuleMetadataPath -InstallPath $InstallPath
                 $metadataFile = Join-Path $metadataPath "$Name.json"
                 
                 if (Test-Path $metadataFile) {
-                    $metadata = Get-Content $metadataFile | ConvertFrom-Json
+                    $metadata = Get-Content $metadataFile -Force | ConvertFrom-Json
                     # Add LastUpdated property if it doesn't exist
                     if (-not $metadata.PSObject.Properties['LastUpdated']) {
                         $metadata | Add-Member -MemberType NoteProperty -Name 'LastUpdated' -Value $null
                     }
                     $metadata.LastUpdated = (Get-Date).ToString('o')
-                    $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile
+                    $metadata | ConvertTo-Json -Depth 10 | Set-Content $metadataFile -Force
                     Write-Verbose "Updated metadata timestamp for module: $Name"
                 }
 
