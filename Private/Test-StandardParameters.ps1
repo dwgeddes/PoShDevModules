@@ -19,9 +19,9 @@
     Installation path to validate (if provided)
 
 .EXAMPLE
-    Test-StandardParameters -GitHubRepo "user/repo" -InstallPath "/some/path"
+    Test-StandardParameter -GitHubRepo "user/repo" -InstallPath "/some/path"
 #>
-function Test-StandardParameters {
+function Test-StandardParameter {
     [CmdletBinding()]
     param(
         [string]$GitHubRepo,

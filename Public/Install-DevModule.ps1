@@ -79,7 +79,7 @@ function Install-DevModule {
             if ($InstallPath) { 
                 $validationParams.InstallPath = $InstallPath 
             }
-            Test-StandardParameters @validationParams
+            Test-StandardParameter @validationParams
         }
         catch {
             Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate installation parameters" -WriteToHost

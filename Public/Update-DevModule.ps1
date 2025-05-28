@@ -39,31 +39,12 @@ function Update-DevModule {
         [ValidateNotNullOrEmpty()]
         [string]$PersonalAccessToken,
         
-        [ValidateScript({
-            if ($_ -and -not (Test-Path $_ -PathType Container)) {
-                throw "Install path does not exist: $_"
-            }
-            $true
-        })]
         [string]$InstallPath,
         
         [switch]$Force
     )
 
     begin {
-        # Validate parameters using standardized validation
-        try {
-            $validationParams = @{}
-            if ($InstallPath) { 
-                $validationParams.InstallPath = $InstallPath 
-            }
-            Test-StandardParameters @validationParams
-        }
-        catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate update parameters" -WriteToHost
-            return
-        }
-        
         if (-not $InstallPath) {
             $InstallPath = Get-DevModulesPath
         }
@@ -80,7 +61,7 @@ function Update-DevModule {
                     "ModuleNotInstalled",
                     [System.Management.Automation.ErrorCategory]::ObjectNotFound,
                     $Name
-                )) -Operation "find installed module" -WriteToHost
+                )) -Operation "find installed module" -WriteToHost -NonTerminating
                 return
             }
 

@@ -74,6 +74,7 @@ function Invoke-DevModuleOperation {
         [Alias('PAT', 'GitHubToken')]
         [string]$PersonalAccessToken,
         
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'List', Justification = 'Parameter is used to determine parameter set and control flow')]
         [Parameter(Mandatory=$true, ParameterSetName='List')]
         [switch]$List,
         
@@ -114,6 +115,8 @@ function Invoke-DevModuleOperation {
                 Install-DevModule @params
             }
             'List' {
+                # The List parameter determines this parameter set
+                Write-Verbose "Listing installed modules (triggered by List parameter: $List)"
                 Get-InstalledDevModule
             }
             'Remove' {
@@ -124,6 +127,8 @@ function Invoke-DevModuleOperation {
                     Name = $Update
                 }
                 if ($PersonalAccessToken) { $params.PersonalAccessToken = $PersonalAccessToken }
+                if ($Force) { $params.Force = $Force }
+                if ($InstallPath) { $params.InstallPath = $InstallPath }
                 
                 Update-DevModule @params
             }

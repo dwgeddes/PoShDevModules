@@ -34,8 +34,8 @@ $ModuleSourcePath = Split-Path $MyInvocation.MyCommand.Path -Parent
 . (Join-Path $ModuleSourcePath 'Private\Get-DevModulesPath.ps1')
 . (Join-Path $ModuleSourcePath 'Private\Invoke-StandardErrorHandling.ps1')
 
-Write-Host "PoShDevModules Self-Installation" -ForegroundColor Green
-Write-Host "================================" -ForegroundColor Green
+Write-Host "PoShDevModules Self-Installation" -ForegroundColor Cyan
+Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Validate that we're in the correct directory (check for key files)

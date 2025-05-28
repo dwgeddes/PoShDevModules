@@ -42,7 +42,6 @@ function Add-ToModulePath {
             # Make persistent across sessions
             if ($IsWindows) {
                 # Windows - use registry
-                $regPath = 'HKCU:\Environment'
                 $currentRegValue = [Environment]::GetEnvironmentVariable('PSModulePath', 'User')
                 if (-not $currentRegValue -or $currentRegValue -notlike "*$normalizedPath*") {
                     $newValue = if ($currentRegValue) { 

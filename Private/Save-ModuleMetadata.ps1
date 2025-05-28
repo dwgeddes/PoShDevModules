@@ -23,7 +23,7 @@
 .PARAMETER ModuleSubPath
     The module subdirectory within the repository (if applicable)
 #>
-function Save-ModuleMetadata {
+function Save-ModuleManifest {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]

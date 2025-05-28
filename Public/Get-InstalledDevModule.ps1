@@ -39,17 +39,6 @@ function Get-InstalledDevModule {
     )
 
     begin {
-        # Validate parameters
-        try {
-            if ($InstallPath) {
-                Test-StandardParameters -InstallPath $InstallPath
-            }
-        }
-        catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate parameters" -WriteToHost
-            return
-        }
-        
         if (-not $InstallPath) {
             $InstallPath = Get-DevModulesPath
         }

@@ -12,7 +12,7 @@
     GitHub PAT for private repos
 #>
 function Update-DevModuleFromGitHub {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Module,
@@ -21,7 +21,7 @@ function Update-DevModuleFromGitHub {
     )
 
     try {
-        Write-Host "Updating module '$($Module.Name)' from GitHub: $($Module.SourcePath)" -ForegroundColor Green
+        Write-Verbose "Updating module '$($Module.Name)' from GitHub: $($Module.SourcePath)"
 
         # Parse the GitHub repo info
         $repoInfo = Get-GitHubRepoInfo -GitHubRepo $Module.SourcePath
@@ -49,7 +49,7 @@ function Update-DevModuleFromGitHub {
                 Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
             }
 
-            Write-Host "Downloaded repository archive" -ForegroundColor Green
+            Write-Verbose "Downloaded repository archive"
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
@@ -77,11 +77,10 @@ function Update-DevModuleFromGitHub {
 
             # Extract version information from new manifest
             $manifestFile = $manifestFiles[0]
-            $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestFile.Name)
             $newVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
             
             Write-Verbose "Found module manifest: $($manifestFile.Name)"
-            Write-Host "Updating to version: $newVersion" -ForegroundColor Green
+            Write-Verbose "Updating to version: $newVersion"
 
             # Extract install base path from Module.InstallPath (remove old version directory if present)
             $installBasePath = Split-Path $Module.InstallPath -Parent
@@ -99,29 +98,37 @@ function Update-DevModuleFromGitHub {
 
             # Remove existing version directory if it exists
             if (Test-Path $newDestinationPath) {
-                Remove-Item -Path $newDestinationPath -Recurse -Force
-                Write-Verbose "Removed existing version directory: $newDestinationPath"
+                if ($PSCmdlet.ShouldProcess($newDestinationPath, "Remove existing version directory")) {
+                    Remove-Item -Path $newDestinationPath -Recurse -Force
+                    Write-Verbose "Removed existing version directory: $newDestinationPath"
+                }
             }
 
             # Create new version directory
-            New-Item -Path $newDestinationPath -ItemType Directory -Force | Out-Null
+            if ($PSCmdlet.ShouldProcess($newDestinationPath, "Create new version directory")) {
+                New-Item -Path $newDestinationPath -ItemType Directory -Force | Out-Null
+            }
             Write-Verbose "Created new version directory: $newDestinationPath"
 
             # Copy updated files
-            Copy-Item -Path "$sourcePath\*" -Destination $newDestinationPath -Recurse -Force
-            Write-Host "Copied updated module files" -ForegroundColor Green
+            if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
+                Copy-Item -Path "$sourcePath\*" -Destination $newDestinationPath -Recurse -Force
+                Write-Verbose "Copied updated module files"
+            }
 
             # Update metadata with new version and path
-            Save-ModuleMetadata -ModuleName $Module.Name -SourceType 'GitHub' -SourcePath $Module.SourcePath -InstallPath $installBasePath -Branch $Module.Branch
+            if ($PSCmdlet.ShouldProcess($Module.Name, "Update module metadata")) {
+                Save-ModuleManifest -ModuleName $Module.Name -SourceType 'GitHub' -SourcePath $Module.SourcePath -InstallPath $installBasePath -Branch $Module.Branch
+            }
 
             # Reload module if it's currently loaded
             if (Get-Module -Name $Module.Name -ErrorAction SilentlyContinue) {
                 Remove-Module -Name $Module.Name -Force
                 Import-Module $Module.Name -Force
-                Write-Host "Reloaded module in current session" -ForegroundColor Green
+                Write-Verbose "Reloaded module in current session"
             }
 
-            Write-Host "Successfully updated module '$($Module.Name)' to version '$newVersion' from GitHub" -ForegroundColor Green
+            Write-Verbose "Successfully updated module '$($Module.Name)' to version '$newVersion' from GitHub"
             
             # Return the updated module object
             $updatedModule = Get-InstalledDevModule -Name $Module.Name -InstallPath $installBasePath

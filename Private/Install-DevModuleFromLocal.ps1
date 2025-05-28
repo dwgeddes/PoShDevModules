@@ -47,7 +47,7 @@ function Install-DevModuleFromLocal {
         $moduleVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
         
         Write-Verbose "Found module manifest: $($manifestFile.Name)"
-        Write-Host "Module name: $moduleName, Version: $moduleVersion" -ForegroundColor Green
+        Write-Verbose "Module name: $moduleName, Version: $moduleVersion"
 
         # Create version-specific destination path: InstallPath/ModuleName/Version/
         $moduleBasePath = Join-Path $InstallPath $moduleName
@@ -69,10 +69,10 @@ function Install-DevModuleFromLocal {
 
         # Copy module files
         Copy-Item -Path "$SourcePath\*" -Destination $destinationPath -Recurse -Force
-        Write-Host "Copied module files from $SourcePath to $destinationPath" -ForegroundColor Green
+        Write-Verbose "Copied module files from $SourcePath to $destinationPath"
 
         # Save metadata
-        Save-ModuleMetadata -ModuleName $moduleName -SourceType 'Local' -SourcePath $SourcePath -InstallPath $InstallPath
+        Save-ModuleManifest -ModuleName $moduleName -SourceType 'Local' -SourcePath $SourcePath -InstallPath $InstallPath
 
         # Import module if requested
         if (-not $SkipImport) {

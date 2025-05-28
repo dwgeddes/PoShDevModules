@@ -120,14 +120,14 @@ Describe "Save-ModuleMetadata" {
     
     Context "Metadata Creation" {
         It "Should create metadata directory if it doesn't exist" {
-            Save-ModuleMetadata -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
+            Save-ModuleManifest -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
             
             $metadataDir = Join-Path $script:TestInstallPath ".metadata"
             Test-Path $metadataDir | Should -Be $true
         }
         
         It "Should create metadata file with correct content" {
-            Save-ModuleMetadata -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
+            Save-ModuleManifest -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "TestModule.json"
             Test-Path $metadataFile | Should -Be $true
@@ -141,7 +141,7 @@ Describe "Save-ModuleMetadata" {
         }
         
         It "Should handle GitHub source type with branch and subpath" {
-            Save-ModuleMetadata -ModuleName "TestModule" -SourceType "GitHub" -SourcePath "user/repo" -InstallPath $script:TestInstallPath -Branch "develop" -ModuleSubPath "src/module"
+            Save-ModuleManifest -ModuleName "TestModule" -SourceType "GitHub" -SourcePath "user/repo" -InstallPath $script:TestInstallPath -Branch "develop" -ModuleSubPath "src/module"
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "TestModule.json"
             $metadata = Get-Content $metadataFile | ConvertFrom-Json
@@ -152,7 +152,7 @@ Describe "Save-ModuleMetadata" {
         }
         
         It "Should extract version from module manifest" {
-            Save-ModuleMetadata -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
+            Save-ModuleManifest -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "TestModule.json"
             $metadata = Get-Content $metadataFile | ConvertFrom-Json
@@ -163,7 +163,7 @@ Describe "Save-ModuleMetadata" {
             # Remove the manifest file from the version-specific directory
             Remove-Item (Join-Path $script:TestModuleVersionPath "TestModule.psd1") -Force
             
-            Save-ModuleMetadata -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
+            Save-ModuleManifest -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath $script:TestInstallPath
             
             $metadataFile = Join-Path $script:TestInstallPath ".metadata" "TestModule.json"
             $metadata = Get-Content $metadataFile | ConvertFrom-Json
@@ -175,7 +175,7 @@ Describe "Save-ModuleMetadata" {
     Context "Error Handling" {
         It "Should not throw error when metadata creation fails" {
             # This test ensures the function handles errors gracefully
-            { Save-ModuleMetadata -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath "/invalid/path" } | Should -Not -Throw
+            { Save-ModuleManifest -ModuleName "TestModule" -SourceType "Local" -SourcePath "/test/path" -InstallPath "/invalid/path" } | Should -Not -Throw
         }
     }
 }

@@ -46,7 +46,7 @@ function Install-DevModuleFromGitHub {
     try {
         # Parse GitHub repo URL/format
         $repoInfo = Get-GitHubRepoInfo -GitHubRepo $GitHubRepo
-        Write-Host "Downloading from GitHub: $($repoInfo.Owner)/$($repoInfo.Repo)" -ForegroundColor Green
+        Write-Verbose "Downloading from GitHub: $($repoInfo.Owner)/$($repoInfo.Repo)"
 
         # Create temporary directory for download
         $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "DevModule_$(Get-Random)"
@@ -68,7 +68,7 @@ function Install-DevModuleFromGitHub {
                 Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
             }
 
-            Write-Host "Downloaded repository archive" -ForegroundColor Green
+            Write-Verbose "Downloaded repository archive"
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
@@ -98,7 +98,7 @@ function Install-DevModuleFromGitHub {
             $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestFile.Name)
             $moduleVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
             
-            Write-Host "Found module: $moduleName, Version: $moduleVersion" -ForegroundColor Green
+            Write-Verbose "Found module: $moduleName, Version: $moduleVersion"
 
             # Create version-specific destination path: InstallPath/ModuleName/Version/
             $moduleBasePath = Join-Path $InstallPath $moduleName
@@ -119,23 +119,23 @@ function Install-DevModuleFromGitHub {
 
             # Copy module files
             Copy-Item -Path "$sourcePath\*" -Destination $destinationPath -Recurse -Force
-            Write-Host "Copied module files to: $destinationPath" -ForegroundColor Green
+            Write-Verbose "Copied module files to: $destinationPath"
 
             # Save metadata
-            Save-ModuleMetadata -ModuleName $moduleName -SourceType 'GitHub' -SourcePath "$($repoInfo.Owner)/$($repoInfo.Repo)" -InstallPath $InstallPath -Branch $Branch -ModuleSubPath $ModuleSubPath
+            Save-ModuleManifest -ModuleName $moduleName -SourceType 'GitHub' -SourcePath "$($repoInfo.Owner)/$($repoInfo.Repo)" -InstallPath $InstallPath -Branch $Branch -ModuleSubPath $ModuleSubPath
 
             # Import module if requested - PowerShell will auto-discover the latest version
             if (-not $SkipImport) {
                 try {
                     Import-Module $moduleName -Force
-                    Write-Host "Imported module: $moduleName" -ForegroundColor Green
+                    Write-Verbose "Imported module: $moduleName"
                 }
                 catch {
                     Write-Warning "Module installed but failed to import: $($_.Exception.Message)"
                 }
             }
 
-            Write-Host "Successfully installed module '$moduleName' from GitHub" -ForegroundColor Green
+            Write-Verbose "Successfully installed module '$moduleName' from GitHub"
             
             # Return the installed module object
             $installedModule = Get-InstalledDevModule -Name $moduleName -InstallPath $InstallPath

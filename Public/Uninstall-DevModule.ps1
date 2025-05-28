@@ -50,7 +50,7 @@ function Uninstall-DevModule {
             if ($InstallPath) { 
                 $validationParams.InstallPath = $InstallPath 
             }
-            Test-StandardParameters @validationParams
+            Test-StandardParameter @validationParams
         }
         catch {
             Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate uninstall parameters" -WriteToHost
@@ -73,7 +73,7 @@ function Uninstall-DevModule {
                     "ModuleNotInstalled",
                     [System.Management.Automation.ErrorCategory]::ObjectNotFound,
                     $Name
-                )) -Operation "find installed module" -WriteToHost
+                )) -Operation "find installed module" -WriteToHost -NonTerminating
                 return
             }
 
@@ -104,7 +104,7 @@ function Uninstall-DevModule {
             if ($PSCmdlet.ShouldProcess($modulePath, "Remove module directory")) {
                 if (Test-Path $modulePath) {
                     Remove-Item -Path $modulePath -Recurse -Force
-                    Write-Host "Removed module directory: $modulePath"
+                    Write-Verbose "Removed module directory: $modulePath"
                 }
 
                 # Remove metadata
@@ -117,7 +117,7 @@ function Uninstall-DevModule {
                 try {
                     if (Get-Module -Name $Name -ErrorAction SilentlyContinue) {
                         Remove-Module -Name $Name -Force
-                        Write-Host "Removed module '$Name' from current session."
+                        Write-Verbose "Removed module '$Name' from current session."
                     }
                 }
                 catch {
