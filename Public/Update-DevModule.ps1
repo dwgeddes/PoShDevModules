@@ -28,6 +28,14 @@
 .EXAMPLE
     Update-DevModule -Name "MyModule" -Force -Verbose
 #>
+# Load private helper for GitHub update
+. (Join-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) '../Private/Update-DevModuleFromGitHub.ps1')
+# Dot-source other private helpers so they load on module import
+. (Join-Path $PSScriptRoot '../Private/Invoke-StandardErrorHandling.ps1')
+. (Join-Path $PSScriptRoot '../Private/Get-DevModulesPath.ps1')
+. (Join-Path $PSScriptRoot '../Private/Get-ModuleMetadataPath.ps1')
+. (Join-Path $PSScriptRoot '../Private/Update-DevModuleFromLocal.ps1')
+
 function Update-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
     param (

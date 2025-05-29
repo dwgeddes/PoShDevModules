@@ -54,6 +54,10 @@
 .EXAMPLE
     Invoke-DevModuleOperation -Remove "MyModule"
 #>
+
+# Dot-source private helpers so they load on module import
+. (Join-Path $PSScriptRoot '../Private/Invoke-StandardErrorHandling.ps1')
+
 function Invoke-DevModuleOperation {
     [CmdletBinding(DefaultParameterSetName='Local')]
     param (
@@ -120,7 +124,7 @@ function Invoke-DevModuleOperation {
                 Get-InstalledDevModule
             }
             'Remove' {
-                Remove-DevModule -Name $Remove
+                Uninstall-DevModule -Name $Remove
             }
             'Update' {
                 $params = @{

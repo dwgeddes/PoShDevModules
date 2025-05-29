@@ -24,6 +24,11 @@
 .EXAMPLE
     Remove-DevModule -Name "MyModule" -Verbose
 #>
+
+# Dot-source private helpers so they load on module import
+. (Join-Path $PSScriptRoot '../Private/Invoke-StandardErrorHandling.ps1')
+. (Join-Path $PSScriptRoot '../Private/Test-StandardParameters.ps1')
+
 function Uninstall-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -46,7 +51,7 @@ function Uninstall-DevModule {
     begin {
         # Validate parameters using standardized validation
         try {
-            $validationParams = @{}
+            $validationParams = @{}    
             if ($InstallPath) { 
                 $validationParams.InstallPath = $InstallPath 
             }

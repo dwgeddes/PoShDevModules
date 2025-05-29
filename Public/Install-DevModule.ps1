@@ -27,6 +27,14 @@
 .EXAMPLE
     Install-DevModule -GitHubRepo "myuser/mymodule" -Branch "develop" -ModuleSubPath "src/MyModule"
 #>
+
+# Dot-source private helpers so they load on module import
+. (Join-Path $PSScriptRoot '../Private/Invoke-StandardErrorHandling.ps1')
+. (Join-Path $PSScriptRoot '../Private/Get-DevModulesPath.ps1')
+. (Join-Path $PSScriptRoot '../Private/Test-StandardParameters.ps1')
+. (Join-Path $PSScriptRoot '../Private/Install-DevModuleFromLocal.ps1')
+. (Join-Path $PSScriptRoot '../Private/Install-DevModuleFromGitHub.ps1')
+
 function Install-DevModule {
     [CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName='Local')]
     param (
