@@ -62,6 +62,7 @@ function Install-DevModuleFromGitHub {
             
             # Use appropriate method based on whether we have a PAT
             # Suppress progress to prevent hanging in non-interactive environments
+            $ProgressPreference = 'SilentlyContinue'
             if ($PersonalAccessToken) {
                 $headers = @{ Authorization = "token $PersonalAccessToken" }
                 Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
@@ -73,6 +74,7 @@ function Install-DevModuleFromGitHub {
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
+            $ProgressPreference = 'SilentlyContinue'
             Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
             Write-Verbose "Extracted repository archive"
 
@@ -119,6 +121,7 @@ function Install-DevModuleFromGitHub {
             New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
 
             # Copy module files
+            $ProgressPreference = 'SilentlyContinue'
             Copy-Item -Path (Join-Path $sourcePath '*') -Destination $destinationPath -Recurse -Force
             Write-Verbose "Copied module files to: $destinationPath"
 

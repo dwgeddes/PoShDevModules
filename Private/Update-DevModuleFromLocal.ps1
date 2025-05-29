@@ -62,6 +62,7 @@ function Update-DevModuleFromLocal {
         # Copy updated files
         if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
             # Suppress progress to prevent hanging in non-interactive environments
+            $ProgressPreference = 'SilentlyContinue'
             Copy-Item -Path (Join-Path $Module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
             Write-Verbose "Copied updated module files"
         }

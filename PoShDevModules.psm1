@@ -18,6 +18,9 @@
 # Module-level variables
 $script:ModuleRoot = $PSScriptRoot
 
+# Disable progress bars to prevent hanging in non-interactive environments
+$ProgressPreference = 'SilentlyContinue'
+
 # Get private and public function files
 $PrivatePath = Join-Path $PSScriptRoot 'Private'
 $PublicPath = Join-Path $PSScriptRoot 'Public'

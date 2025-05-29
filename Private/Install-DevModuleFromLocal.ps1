@@ -69,6 +69,7 @@ function Install-DevModuleFromLocal {
 
         # Copy module files
         # Suppress progress to prevent hanging in non-interactive environments
+        $ProgressPreference = 'SilentlyContinue'
         Copy-Item -Path (Join-Path $SourcePath '*') -Destination $destinationPath -Recurse -Force
         Write-Verbose "Copied module files from $SourcePath to $destinationPath"
 

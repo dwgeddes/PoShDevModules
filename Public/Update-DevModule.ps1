@@ -133,6 +133,7 @@ function Update-DevModule {
                         New-Item -Path $newDestinationPath -ItemType Directory -Force | Out-Null
                         Write-Verbose "Created new version directory: $newDestinationPath"
                         
+                        $ProgressPreference = 'SilentlyContinue'
                         Copy-Item -Path (Join-Path $module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
                         Write-Verbose "Copied updated module files"
 
@@ -149,11 +150,15 @@ function Update-DevModule {
                         Get-InstalledDevModule -Name $module.Name -InstallPath $installBasePath
                     }
                     'GitHub' {
-                        Write-Warning "GitHub updates not yet supported. PersonalAccessToken parameter will be implemented with GitHub functionality."
-                        if ($PersonalAccessToken) {
-                            Write-Verbose "PersonalAccessToken provided but GitHub update functionality is not yet implemented"
+                        # Call the private GitHub update function
+                        $params = @{
+                            Module = $module
                         }
-                        return
+                        if ($PersonalAccessToken) { 
+                            $params.PersonalAccessToken = $PersonalAccessToken 
+                        }
+                        
+                        Update-DevModuleFromGitHub @params
                     }
                     default {
                         Write-Error "Unknown source type: $($module.SourceType)" -Category InvalidData

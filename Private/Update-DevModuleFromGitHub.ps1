@@ -43,6 +43,7 @@ function Update-DevModuleFromGitHub {
             
             # Use appropriate method based on whether we have a PAT
             # Suppress progress to prevent hanging in non-interactive environments
+            $ProgressPreference = 'SilentlyContinue'
             if ($PersonalAccessToken) {
                 $headers = @{ Authorization = "token $PersonalAccessToken" }
                 Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
@@ -54,6 +55,7 @@ function Update-DevModuleFromGitHub {
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
+            $ProgressPreference = 'SilentlyContinue'
             Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
             Write-Verbose "Extracted repository archive"
 
@@ -113,6 +115,7 @@ function Update-DevModuleFromGitHub {
 
             # Copy updated files
             if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
+                $ProgressPreference = 'SilentlyContinue'
                 Copy-Item -Path (Join-Path $sourcePath '*') -Destination $newDestinationPath -Recurse -Force
                 Write-Verbose "Copied updated module files"
             }
