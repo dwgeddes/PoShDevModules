@@ -88,11 +88,11 @@ function Update-DevModuleFromGitHub {
             # Extract install base path from Module.InstallPath (remove old version directory if present)
             $installBasePath = Split-Path $Module.InstallPath -Parent
             if ((Split-Path $installBasePath -Leaf) -eq $Module.Name) {
-                # Module.InstallPath was already the base path
-                $moduleBasePath = $Module.InstallPath
+                # Module.InstallPath included version directory, installBasePath is the module base path
+                $moduleBasePath = $installBasePath
                 $installBasePath = Split-Path $moduleBasePath -Parent
             } else {
-                # Module.InstallPath included version directory
+                # Module.InstallPath was already the base path (unusual)
                 $moduleBasePath = Join-Path $installBasePath $Module.Name
             }
 

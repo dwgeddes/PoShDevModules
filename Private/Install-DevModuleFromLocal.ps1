@@ -44,7 +44,19 @@ function Install-DevModuleFromLocal {
 
         $manifestFile = $manifestFiles[0]
         $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestFile.Name)
-        $moduleVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
+        
+        # Validate manifest before installation
+        try {
+            $moduleVersion = Get-ModuleVersionFromManifest -ManifestPath $manifestFile.FullName
+            # Additional validation: Test if manifest can be properly parsed
+            $testManifest = Import-PowerShellDataFile -Path $manifestFile.FullName -ErrorAction Stop
+            if (-not $testManifest) {
+                throw "Invalid module manifest: Cannot parse as PowerShell data file"
+            }
+        }
+        catch {
+            throw "Failed to validate module manifest: $($_.Exception.Message)"
+        }
         
         Write-Verbose "Found module manifest: $($manifestFile.Name)"
         Write-Verbose "Module name: $moduleName, Version: $moduleVersion"
