@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Parses GitHub repository information from various input formats
 

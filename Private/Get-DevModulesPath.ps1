@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Gets the default development modules installation path
 

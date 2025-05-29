@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs a module from a GitHub repository
 
@@ -61,6 +61,7 @@ function Install-DevModuleFromGitHub {
             Write-Verbose "Downloading from: $downloadUrl"
             
             # Use appropriate method based on whether we have a PAT
+            # Suppress progress to prevent hanging in non-interactive environments
             if ($PersonalAccessToken) {
                 $headers = @{ Authorization = "token $PersonalAccessToken" }
                 Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers

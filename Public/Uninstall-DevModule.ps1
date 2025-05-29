@@ -1,13 +1,13 @@
-<#
+﻿<#
 .SYNOPSIS
-    Uninstalls an installed development module
+    Removes an installed development module
 
 .DESCRIPTION
-    This function uninstalls a PowerShell module that was installed using the 
+    This function removes a PowerShell module that was installed using the 
     development module management system.
 
 .PARAMETER Name
-    Name of the module to uninstall
+    Name of the module to remove
 
 .PARAMETER InstallPath
     Path where development modules are installed (default: ~/.local/share/powershell/DevModules on macOS/Linux, ~/Documents/PowerShell/DevModules on Windows)
@@ -16,13 +16,13 @@
     Skip confirmation prompts
 
 .EXAMPLE
-    Uninstall-DevModule -Name "MyModule"
+    Remove-DevModule -Name "MyModule"
 
 .EXAMPLE
-    Uninstall-DevModule -Name "MyModule" -Force
+    Remove-DevModule -Name "MyModule" -Force
 
 .EXAMPLE
-    Uninstall-DevModule -Name "MyModule" -Verbose
+    Remove-DevModule -Name "MyModule" -Verbose
 #>
 function Uninstall-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
@@ -53,14 +53,14 @@ function Uninstall-DevModule {
             Test-StandardParameter @validationParams
         }
         catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate uninstall parameters" -WriteToHost
+            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate remove parameters" -WriteToHost
             return
         }
         
         if (-not $InstallPath) {
             $InstallPath = Get-DevModulesPath
         }
-        Write-Verbose "Starting uninstall of module: $Name"
+        Write-Verbose "Starting removal of module: $Name"
     }
 
     process {
@@ -86,16 +86,16 @@ function Uninstall-DevModule {
 
             # Confirm removal unless Force is specified or in WhatIf mode
             if (-not $Force -and -not $WhatIfPreference) {
-                $title = "Uninstall Development Module"
-                $message = "Are you sure you want to uninstall the module '$Name' from '$modulePath'?"
+                $title = "Remove Development Module"
+                $message = "Are you sure you want to remove the module '$Name' from '$modulePath'?"
                 $choices = @(
-                    [System.Management.Automation.Host.ChoiceDescription]::new("&Yes", "Uninstall the module")
+                    [System.Management.Automation.Host.ChoiceDescription]::new("&Yes", "Remove the module")
                     [System.Management.Automation.Host.ChoiceDescription]::new("&No", "Cancel the operation")
                 )
                 $decision = $Host.UI.PromptForChoice($title, $message, $choices, 1)
                 
                 if ($decision -ne 0) {
-                    Write-Information "Module uninstall cancelled by user." -InformationAction Continue
+                    Write-Information "Module removal cancelled by user." -InformationAction Continue
                     return
                 }
             }
@@ -124,7 +124,7 @@ function Uninstall-DevModule {
                     Write-Warning "Could not remove module '$Name' from current session: $($_.Exception.Message)"
                 }
 
-                Write-Information "Successfully uninstalled module: $Name" -InformationAction Continue
+                Write-Information "Successfully removed module: $Name" -InformationAction Continue
                 
                 # Return the uninstalled module object
                 return $moduleToRemove
@@ -137,6 +137,6 @@ function Uninstall-DevModule {
     }
 
     end {
-        Write-Verbose "Module uninstall completed."
+        Write-Verbose "Module remove completed."
     }
 }

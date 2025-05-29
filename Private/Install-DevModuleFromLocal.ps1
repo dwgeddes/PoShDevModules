@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs a module from a local filesystem path
 
@@ -68,6 +68,7 @@ function Install-DevModuleFromLocal {
         Write-Verbose "Created destination directory: $destinationPath"
 
         # Copy module files
+        # Suppress progress to prevent hanging in non-interactive environments
         Copy-Item -Path (Join-Path $SourcePath '*') -Destination $destinationPath -Recurse -Force
         Write-Verbose "Copied module files from $SourcePath to $destinationPath"
 

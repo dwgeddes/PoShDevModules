@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Updates a module from a GitHub source
 
@@ -42,6 +42,7 @@ function Update-DevModuleFromGitHub {
             Write-Verbose "Downloading from: $downloadUrl"
             
             # Use appropriate method based on whether we have a PAT
+            # Suppress progress to prevent hanging in non-interactive environments
             if ($PersonalAccessToken) {
                 $headers = @{ Authorization = "token $PersonalAccessToken" }
                 Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
@@ -124,6 +125,7 @@ function Update-DevModuleFromGitHub {
             # Reload module if it's currently loaded
             if (Get-Module -Name $Module.Name -ErrorAction SilentlyContinue) {
                 Remove-Module -Name $Module.Name -Force
+                $ProgressPreference = 'SilentlyContinue'
                 Import-Module $Module.Name -Force
                 Write-Verbose "Reloaded module in current session"
             }

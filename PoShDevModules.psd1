@@ -1,4 +1,4 @@
-@{
+﻿@{
     # Script module or binary module file associated with this manifest.
     RootModule = 'PoShDevModules.psm1'
 
@@ -25,11 +25,11 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
+        'Get-InstalledDevModule',
         'Install-DevModule',
-        'Get-InstalledDevModule', 
+        'Invoke-DevModuleOperation',
         'Uninstall-DevModule',
-        'Update-DevModule',
-        'Invoke-DevModuleOperation'
+        'Update-DevModule'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

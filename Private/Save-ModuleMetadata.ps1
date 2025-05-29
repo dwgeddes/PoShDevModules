@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Saves metadata about an insta    try {
         # Ensure metadata directory exists

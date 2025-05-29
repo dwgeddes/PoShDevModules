@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Gets a list of all installed development modules
 

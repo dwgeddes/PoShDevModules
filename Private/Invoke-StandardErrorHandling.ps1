@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Provides standardized error handling for the module
 
@@ -52,7 +52,7 @@ function Invoke-StandardErrorHandling {
     }
     
     # Enhanced error handling
-    $errorMessage = "Failed to $Operation: $($ErrorRecord.Exception.Message)"
+    $errorMessage = "Failed to ${Operation}: $($ErrorRecord.Exception.Message)"
     Write-Error $errorMessage
     Write-Verbose "Full error details: $($ErrorRecord | Out-String)"
     
@@ -67,7 +67,7 @@ function Invoke-StandardErrorHandling {
     $exception = New-Object System.Exception($errorMessage, $ErrorRecord.Exception)
     $newErrorRecord = New-Object System.Management.Automation.ErrorRecord(
         $exception,
-        "PoShDevModules.$Operation",
+        "PoShDevModules.${Operation}",
         $ErrorRecord.CategoryInfo.Category,
         $ErrorRecord.TargetObject
     )

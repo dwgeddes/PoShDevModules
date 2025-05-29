@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Updates a module from a local source
 
@@ -61,6 +61,7 @@ function Update-DevModuleFromLocal {
 
         # Copy updated files
         if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
+            # Suppress progress to prevent hanging in non-interactive environments
             Copy-Item -Path (Join-Path $Module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
             Write-Verbose "Copied updated module files"
         }

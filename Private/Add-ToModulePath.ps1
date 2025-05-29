@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Adds a custom path to the PowerShell module path
 

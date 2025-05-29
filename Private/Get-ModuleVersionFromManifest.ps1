@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Extracts module version from a PowerShell module manifest
 

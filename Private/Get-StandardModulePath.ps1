@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Gets the standard PowerShell module path for the current user
 

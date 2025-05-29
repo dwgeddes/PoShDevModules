@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Gets the path to the metadata directory for installed modules
 

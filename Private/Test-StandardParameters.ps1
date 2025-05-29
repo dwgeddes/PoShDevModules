@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Provides standardized parameter validation for the module
 
@@ -15,6 +15,9 @@
 .PARAMETER ModuleName
     Module name to validate (if provided)
 
+.PARAMETER Name
+    Name to validate (if provided)
+
 .PARAMETER InstallPath
     Installation path to validate (if provided)
 
@@ -27,6 +30,7 @@ function Test-StandardParameter {
         [string]$GitHubRepo,
         [string]$SourcePath,
         [string]$ModuleName,
+        [string]$Name,
         [string]$InstallPath
     )
     
@@ -46,6 +50,12 @@ function Test-StandardParameter {
     if ($ModuleName) {
         if (-not ($ModuleName -match '^[a-zA-Z][a-zA-Z0-9._-]*$')) {
             throw [System.ArgumentException]::new("Invalid module name format. Module names must start with a letter and contain only letters, numbers, dots, hyphens, and underscores.")
+        }
+    }
+
+    if ($Name) {
+        if (-not ($Name -match '^[a-zA-Z][a-zA-Z0-9._-]*$')) {
+            throw [System.ArgumentException]::new("Invalid name format. Names must start with a letter and contain only letters, numbers, dots, hyphens, and underscores.")
         }
     }
 

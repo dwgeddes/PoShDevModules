@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs a development module from a local path or GitHub repository.
 
@@ -28,8 +28,12 @@
     Install-DevModule -GitHubRepo "myuser/mymodule" -Branch "develop" -ModuleSubPath "src/MyModule"
 #>
 function Install-DevModule {
-    [CmdletBinding(DefaultParameterSetName='Local')]
+    [CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName='Local')]
     param (
+        [Parameter(ParameterSetName='Local')]
+        [Parameter(ParameterSetName='GitHub')]
+        [string]$Name,
+        
         [Parameter(Mandatory=$true, ParameterSetName='Local')]
         [ValidateScript({Test-Path $_ -PathType Container})]
         [string]$SourcePath,
@@ -88,29 +92,31 @@ function Install-DevModule {
     }
 
     process {
-        try {
-            switch ($PSCmdlet.ParameterSetName) {
-                'Local' {
-                    Install-DevModuleFromLocal -SourcePath $SourcePath -InstallPath $InstallPath -Force:$Force -SkipImport:$SkipImport
-                }
-                'GitHub' {
-                    $params = @{
-                        GitHubRepo = $GitHubRepo
-                        Branch = $Branch
-                        InstallPath = $InstallPath
-                        Force = $Force
-                        SkipImport = $SkipImport
+        if ($PSCmdlet.ShouldProcess($InstallPath, "Install development module")) {
+            try {
+                switch ($PSCmdlet.ParameterSetName) {
+                    'Local' {
+                        Install-DevModuleFromLocal -SourcePath $SourcePath -InstallPath $InstallPath -Force:$Force -SkipImport:$SkipImport
                     }
-                    if ($ModuleSubPath) { $params.ModuleSubPath = $ModuleSubPath }
-                    if ($PersonalAccessToken) { $params.PersonalAccessToken = $PersonalAccessToken }
-                    
-                    Install-DevModuleFromGitHub @params
+                    'GitHub' {
+                        $params = @{
+                            GitHubRepo = $GitHubRepo
+                            Branch = $Branch
+                            InstallPath = $InstallPath
+                            Force = $Force
+                            SkipImport = $SkipImport
+                        }
+                        if ($ModuleSubPath) { $params.ModuleSubPath = $ModuleSubPath }
+                        if ($PersonalAccessToken) { $params.PersonalAccessToken = $PersonalAccessToken }
+                        
+                        Install-DevModuleFromGitHub @params
+                    }
                 }
             }
-        }
-        catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "install module" -WriteToHost
-            return
+            catch {
+                Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "install module" -WriteToHost
+                return
+            }
         }
     }
 

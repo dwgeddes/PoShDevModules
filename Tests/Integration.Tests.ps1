@@ -1,4 +1,6 @@
-#Requires -Modules Pester
+﻿#Requires -Modules Pester
+$ProgressPreference = 'SilentlyContinue'
+function Write-Progress { }
 
 <#
 .SYNOPSIS
@@ -21,33 +23,26 @@ BeforeAll {
     $script:TestModulePath = Join-Path $script:TestDirectory "IntegrationTestModule"
     New-Item -Path $script:TestModulePath -ItemType Directory -Force | Out-Null
     
-    # Create a complete test module with all required files
-    $moduleManifest = @"
-@{
-    RootModule = 'IntegrationTestModule.psm1'
-    ModuleVersion = '1.0.0'
-    GUID = 'b2c3d4e5-f6g7-8901-bcde-f23456789012'
-    Author = 'Integration Test'
-    CompanyName = 'Test Company'
-    Copyright = '(c) Test. All rights reserved.'
-    Description = 'Integration test module for PoShDevModules'
-    PowerShellVersion = '5.1'
-    FunctionsToExport = @('Get-IntegrationTest', 'Set-IntegrationTest')
-    CmdletsToExport = @()
-    VariablesToExport = @()
-    AliasesToExport = @()
-    PrivateData = @{
-        PSData = @{
-            Tags = @('Test', 'Integration')
-            ProjectUri = 'https://github.com/test/integration-test-module'
-            ReleaseNotes = 'Initial release for integration testing'
-        }
-    }
-}
-"@
-    Set-Content -Path (Join-Path $script:TestModulePath "IntegrationTestModule.psd1") -Value $moduleManifest
+    # Create a complete test module with all required files using New-ModuleManifest
+    $manifestPath = Join-Path $script:TestModulePath "IntegrationTestModule.psd1"
+    New-ModuleManifest -Path $manifestPath `
+        -RootModule 'IntegrationTestModule.psm1' `
+        -ModuleVersion '1.0.0' `
+        -GUID 'b2c3d4e5-f6a7-8901-bcde-f23456789012' `
+        -Author 'Integration Test' `
+        -CompanyName 'Test Company' `
+        -Copyright '(c) Test. All rights reserved.' `
+        -Description 'Integration test module for PoShDevModules' `
+        -PowerShellVersion '5.1' `
+        -FunctionsToExport @('Get-IntegrationTest', 'Set-IntegrationTest') `
+        -CmdletsToExport @() `
+        -VariablesToExport @() `
+        -AliasesToExport @() `
+        -Tags @('Test', 'Integration') `
+        -ProjectUri 'https://github.com/test/integration-test-module' `
+        -ReleaseNotes 'Initial release for integration testing'
     
-    $moduleScript = @"
+    $moduleScript = @'
 function Get-IntegrationTest {
     [CmdletBinding()]
     param()
@@ -70,7 +65,7 @@ function Set-IntegrationTest {
 }
 
 Export-ModuleMember -Function Get-IntegrationTest, Set-IntegrationTest
-"@
+'@
     Set-Content -Path (Join-Path $script:TestModulePath "IntegrationTestModule.psm1") -Value $moduleScript
     
     # Create a README for completeness
@@ -96,7 +91,8 @@ AfterAll {
     # Clean up any installed test modules
     try {
         Uninstall-DevModule -Name "IntegrationTestModule" -Force -ErrorAction SilentlyContinue
-    } catch {
+    }
+    catch {
         Write-Verbose "Cleanup error (expected): $($_.Exception.Message)"
     }
 }
@@ -114,7 +110,23 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             $listedModules | Where-Object { $_.Name -eq "IntegrationTestModule" } | Should -Not -BeNullOrEmpty
             
             # Verify the module actually works
-            Import-Module $installedModule.InstallPath -Force
+            $manifestPath = Join-Path $installedModule.InstallPath "$($installedModule.Name).psd1"
+            Import-Module $manifestPath -Force
+            
+            # Debug: Check what files were actually installed and their content
+            Write-Host "DEBUG: Checking installed files at: $($installedModule.InstallPath)"
+            Get-ChildItem $installedModule.InstallPath | ForEach-Object { 
+                Write-Host "  File: $($_.Name) ($($_.Length) bytes)"
+                if ($_.Name -like "*.psm1") {
+                    Write-Host "  PSM1 Content:"
+                    Get-Content $_.FullName | ForEach-Object { Write-Host "    $_" }
+                }
+            }
+            
+            # Ensure module is fully loaded before testing functions
+            $moduleLoaded = Get-Module -Name "IntegrationTestModule"
+            $moduleLoaded | Should -Not -BeNullOrEmpty
+            
             $testResult = Get-IntegrationTest
             $testResult.Status | Should -Be "Working"
         }
@@ -134,20 +146,20 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             $updatedModule.Version | Should -Be "1.1.0"
         }
         
-        It "Should handle module uninstallation correctly" {
+        It "Should handle module removal correctly" {
             # Install module first
             Install-DevModule -SourcePath $script:TestModulePath -Force | Out-Null
             
             # Verify it exists
-            $beforeUninstall = Get-InstalledDevModule -Name "IntegrationTestModule"
-            $beforeUninstall | Should -Not -BeNullOrEmpty
+            $beforeRemove = Get-InstalledDevModule -Name "IntegrationTestModule"
+            $beforeRemove | Should -Not -BeNullOrEmpty
             
-            # Uninstall it
+            # Remove it
             Uninstall-DevModule -Name "IntegrationTestModule" -Force
             
             # Verify it's gone
-            $afterUninstall = Get-InstalledDevModule -Name "IntegrationTestModule"
-            $afterUninstall | Should -BeNullOrEmpty
+            $afterRemove = Get-InstalledDevModule -Name "IntegrationTestModule"
+            $afterRemove | Should -BeNullOrEmpty
         }
     }
     
@@ -177,7 +189,7 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             # Note: Update via pipeline may fail if source isn't available, but tests the pipeline structure
             Write-Information "Expected potential error: Testing pipeline update (may fail if source unavailable)" -InformationAction Continue
             try {
-                $module | Update-DevModule
+                $module | Update-DevModule -Force
             } catch {
                 Write-Verbose "Pipeline update error (expected in test environment): $($_.Exception.Message)"
             }

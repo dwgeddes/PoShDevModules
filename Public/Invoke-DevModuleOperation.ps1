@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Main entry point function that routes operations based on parameters
 
@@ -120,7 +120,7 @@ function Invoke-DevModuleOperation {
                 Get-InstalledDevModule
             }
             'Remove' {
-                Uninstall-DevModule -Name $Remove
+                Remove-DevModule -Name $Remove
             }
             'Update' {
                 $params = @{

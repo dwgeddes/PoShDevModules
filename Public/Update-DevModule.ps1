@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Updates an installed development module from its original source
 
