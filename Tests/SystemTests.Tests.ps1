@@ -25,6 +25,16 @@ BeforeAll {
 }
 
 AfterAll {
+    # Clean up installed test modules
+    try {
+        Uninstall-DevModule -Name "TestPowerShellGetModule" -Force -ErrorAction SilentlyContinue
+        Write-Verbose "Cleaned up TestPowerShellGetModule"
+    }
+    catch {
+        Write-Verbose "TestPowerShellGetModule cleanup: $($_.Exception.Message)"
+    }
+    
+    # Clean up test directory
     if (Test-Path $script:TestDirectory) {
         Remove-Item -Path $script:TestDirectory -Recurse -Force -ErrorAction SilentlyContinue
     }

@@ -95,6 +95,14 @@ AfterAll {
     catch {
         Write-Verbose "Cleanup error (expected): $($_.Exception.Message)"
     }
+    
+    try {
+        Uninstall-DevModule -Name "CorruptModule" -Force -ErrorAction SilentlyContinue
+        Write-Verbose "Cleaned up CorruptModule"
+    }
+    catch {
+        Write-Verbose "CorruptModule cleanup: $($_.Exception.Message)"
+    }
 }
 
 Describe "Complete Installation Workflow" -Tag "Integration" {
