@@ -25,10 +25,6 @@
     Remove-DevModule -Name "MyModule" -Verbose
 #>
 
-# Dot-source private helpers so they load on module import
-. (Join-Path $PSScriptRoot '../Private/Invoke-StandardErrorHandling.ps1')
-. (Join-Path $PSScriptRoot '../Private/Test-StandardParameters.ps1')
-
 function Uninstall-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -73,12 +69,7 @@ function Uninstall-DevModule {
             # Check if module exists
             $module = Get-InstalledDevModule -Name $Name -InstallPath $InstallPath
             if (-not $module) {
-                Invoke-StandardErrorHandling -ErrorRecord (New-Object System.Management.Automation.ErrorRecord(
-                    (New-Object System.InvalidOperationException("Module '$Name' is not installed.")),
-                    "ModuleNotInstalled",
-                    [System.Management.Automation.ErrorCategory]::ObjectNotFound,
-                    $Name
-                )) -Operation "find installed module" -WriteToHost -NonTerminating
+                Write-Error "Module '$Name' is not installed."
                 return
             }
 

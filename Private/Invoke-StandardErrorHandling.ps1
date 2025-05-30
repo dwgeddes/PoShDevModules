@@ -53,11 +53,12 @@ function Invoke-StandardErrorHandling {
     
     # Enhanced error handling
     $errorMessage = "Failed to ${Operation}: $($ErrorRecord.Exception.Message)"
-    Write-Error $errorMessage
     Write-Verbose "Full error details: $($ErrorRecord | Out-String)"
     
     if ($WriteToHost) {
         Write-Error "Error: $errorMessage"
+    } else {
+        Write-Error $errorMessage
     }
     
     if ($NonTerminating) {

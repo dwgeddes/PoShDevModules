@@ -22,10 +22,6 @@
     Get-InstalledDevModule | Format-Table Name, Version, SourceType, InstallDate
 #>
 
-# Dot-source private helpers so they load on module import  
-. (Join-Path $PSScriptRoot '../Private/Get-DevModulesPath.ps1')
-. (Join-Path $PSScriptRoot '../Private/Get-ModuleMetadataPath.ps1')
-
 function Get-InstalledDevModule {
     [CmdletBinding()]
     param (
