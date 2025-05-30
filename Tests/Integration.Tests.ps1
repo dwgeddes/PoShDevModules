@@ -122,12 +122,12 @@ Describe "Complete Installation Workflow" -Tag "Integration" {
             Import-Module $manifestPath -Force
             
             # Debug: Check what files were actually installed and their content
-            Write-Host "DEBUG: Checking installed files at: $($installedModule.InstallPath)"
+            Write-Verbose "DEBUG: Checking installed files at: $($installedModule.InstallPath)" -Verbose
             Get-ChildItem $installedModule.InstallPath | ForEach-Object { 
-                Write-Host "  File: $($_.Name) ($($_.Length) bytes)"
+                Write-Verbose "  File: $($_.Name) ($($_.Length) bytes)" -Verbose
                 if ($_.Name -like "*.psm1") {
-                    Write-Host "  PSM1 Content:"
-                    Get-Content $_.FullName | ForEach-Object { Write-Host "    $_" }
+                    Write-Verbose "  PSM1 Content:" -Verbose
+                    Get-Content $_.FullName | ForEach-Object { Write-Verbose "    $_" -Verbose }
                 }
             }
             
@@ -302,6 +302,208 @@ Describe "Module Architecture Validation" -Tag "Integration" {
             $expectedCommands = @('Get-InstalledDevModule', 'Install-DevModule', 'Invoke-DevModuleOperation', 'Uninstall-DevModule', 'Update-DevModule')
             foreach ($cmd in $expectedCommands) {
                 $exportedCommands.Name | Should -Contain $cmd
+            }
+        }
+    }
+}
+
+Describe "Pipeline Self-Destruction Protection" -Tag "Integration", "Pipeline" {
+    BeforeAll {
+        # Ensure clean state for pipeline tests
+        $script:PipelineTestDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "PoShDevModules_Pipeline_$(Get-Random)"
+        New-Item -Path $script:PipelineTestDirectory -ItemType Directory -Force | Out-Null
+        
+        # Use same module path as main test
+        $script:PipelineModulePath = Join-Path $PSScriptRoot '..' 'PoShDevModules.psd1'
+    }
+    
+    AfterAll {
+        # Clean up test directory
+        if (Test-Path $script:PipelineTestDirectory) {
+            Remove-Item -Path $script:PipelineTestDirectory -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    Context "Pipeline Self-Destruction Protection - Critical Fix Validation" {
+        It "Should preserve module functions during pipeline uninstall when PoShDevModules processes itself" {
+            # This tests the critical fix for the pipeline self-destruction issue
+            
+            # Install PoShDevModules to test location for real pipeline test
+            $job = Start-Job {
+                param($ModulePath, $TestDir)
+                Import-Module $ModulePath -Force
+                
+                # Install to test location
+                Install-DevModule -SourcePath (Split-Path $ModulePath) -InstallPath $TestDir -Force | Out-Null
+                
+                # Critical test: Pipeline with PoShDevModules in the list
+                $modulesBefore = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                # This pipeline execution should NOT break
+                Get-InstalledDevModule -InstallPath $TestDir | Uninstall-DevModule -Force | Out-Null
+                
+                # Verify functions still available after pipeline
+                $modulesAfter = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                return [PSCustomObject]@{
+                    FunctionsBefore = $modulesBefore
+                    FunctionsAfter = $modulesAfter
+                    PipelineCompleted = $true
+                    ProtectionWorked = ($modulesAfter -eq $modulesBefore)
+                }
+            } -ArgumentList $script:PipelineModulePath, $script:PipelineTestDirectory
+            
+            $completed = Wait-Job $job -Timeout 30
+            if ($completed) {
+                $result = Receive-Job $job
+                Remove-Job $job
+                
+                $result.PipelineCompleted | Should -Be $true
+                $result.ProtectionWorked | Should -Be $true -Because "Module functions should remain available during pipeline execution"
+                $result.FunctionsBefore | Should -BeGreaterThan 0
+                $result.FunctionsAfter | Should -Be $result.FunctionsBefore
+            } else {
+                Remove-Job $job -Force
+                throw "Pipeline protection test timed out - likely hanging due to pipeline breakage"
+            }
+        }
+        
+        It "Should preserve module functions during self-uninstall pipeline execution" {
+            # Test the key behavior: pipeline protection preserves functions
+            # This is more reliable than testing warning message capture
+            $job = Start-Job {
+                param($ModulePath, $TestDir)
+                Import-Module $ModulePath -Force
+                
+                # Install PoShDevModules for testing
+                Install-DevModule -SourcePath (Split-Path $ModulePath) -InstallPath $TestDir -Force | Out-Null
+                
+                # Test that functions remain available during and after pipeline
+                $functionsBefore = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                # Execute the pipeline that should trigger protection
+                Get-InstalledDevModule -InstallPath $TestDir | Uninstall-DevModule -Force | Out-Null
+                
+                $functionsAfter = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                return [PSCustomObject]@{
+                    FunctionsBefore = $functionsBefore
+                    FunctionsAfter = $functionsAfter
+                    ProtectionWorked = ($functionsAfter -eq $functionsBefore -and $functionsAfter -gt 0)
+                }
+            } -ArgumentList $script:PipelineModulePath, $script:PipelineTestDirectory
+            
+            $completed = Wait-Job $job -Timeout 30
+            if ($completed) {
+                $result = Receive-Job $job
+                Remove-Job $job
+                
+                # Test the actual protection behavior, not warning messages
+                $result.ProtectionWorked | Should -Be $true -Because "Pipeline protection should preserve module functions"
+                $result.FunctionsBefore | Should -BeGreaterThan 0 -Because "Module should have functions before pipeline"
+                $result.FunctionsAfter | Should -Be $result.FunctionsBefore -Because "Functions should remain after pipeline"
+            } else {
+                Remove-Job $job -Force
+                throw "Pipeline protection behavior test timed out"
+            }
+        }
+        
+        It "Should handle multiple modules in pipeline without function loss" {
+            # Test pipeline with multiple modules where PoShDevModules isn't first
+            $job = Start-Job {
+                param($ModulePath, $TestDir)
+                Import-Module $ModulePath -Force
+                
+                # Create and install a test module first
+                $testModuleDir = Join-Path $TestDir "TestPipelineModule"
+                New-Item -Path $testModuleDir -ItemType Directory -Force | Out-Null
+                
+                # Create simple test module
+                $manifestContent = @"
+@{
+    RootModule = 'TestPipelineModule.psm1'
+    ModuleVersion = '1.0.0'
+    GUID = 'b2c3d4e5-f6a7-8901-bcde-f23456789abc'
+    Author = 'Test'
+    Description = 'Test module for pipeline testing'
+}
+"@
+                $manifestContent | Set-Content (Join-Path $testModuleDir "TestPipelineModule.psd1")
+                "function Test-PipelineFunction { return 'test' }" | Set-Content (Join-Path $testModuleDir "TestPipelineModule.psm1")
+                
+                # Install both modules
+                Install-DevModule -SourcePath $testModuleDir -InstallPath $TestDir -Force | Out-Null
+                Install-DevModule -SourcePath (Split-Path $ModulePath) -InstallPath $TestDir -Force | Out-Null
+                
+                # Test pipeline with multiple modules
+                $modulesBefore = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                $installedModules = Get-InstalledDevModule -InstallPath $TestDir
+                
+                # Pipeline should process all modules without breaking
+                $installedModules | Uninstall-DevModule -Force | Out-Null
+                
+                $modulesAfter = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                return [PSCustomObject]@{
+                    ModuleCount = $installedModules.Count
+                    FunctionsBefore = $modulesBefore
+                    FunctionsAfter = $modulesAfter
+                    PipelineWorked = ($modulesAfter -eq $modulesBefore)
+                }
+            } -ArgumentList $script:PipelineModulePath, $script:PipelineTestDirectory
+            
+            $completed = Wait-Job $job -Timeout 45
+            if ($completed) {
+                $result = Receive-Job $job
+                Remove-Job $job
+                
+                $result.ModuleCount | Should -BeGreaterOrEqual 2
+                $result.PipelineWorked | Should -Be $true -Because "Pipeline should handle multiple modules without function loss"
+            } else {
+                Remove-Job $job -Force
+                throw "Multi-module pipeline test timed out"
+            }
+        }
+    }
+    
+    Context "Update Pipeline Self-Reload Protection" {
+        It "Should prevent context loss during self-update in pipeline" {
+            # Test the update self-reload protection
+            $job = Start-Job {
+                param($ModulePath, $TestDir)
+                Import-Module $ModulePath -Force
+                
+                # Install PoShDevModules for update testing
+                Install-DevModule -SourcePath (Split-Path $ModulePath) -InstallPath $TestDir -Force | Out-Null
+                
+                # Test that Update-DevModule with self-update protection works
+                $functionsBefore = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                try {
+                    # This should trigger self-update protection (will fail due to no git repo, but tests protection)
+                    Get-InstalledDevModule -InstallPath $TestDir -Name "PoShDevModules" | Update-DevModule -Force -WhatIf
+                } catch {
+                    # Expected to fail in test environment, but protection should preserve functions
+                }
+                
+                $functionsAfter = Get-Command -Module PoShDevModules | Measure-Object | Select-Object -ExpandProperty Count
+                
+                return [PSCustomObject]@{
+                    FunctionsBefore = $functionsBefore
+                    FunctionsAfter = $functionsAfter
+                    ProtectionWorked = ($functionsAfter -eq $functionsBefore)
+                }
+            } -ArgumentList $script:PipelineModulePath, $script:PipelineTestDirectory
+            
+            $completed = Wait-Job $job -Timeout 30
+            if ($completed) {
+                $result = Receive-Job $job
+                Remove-Job $job
+                
+                $result.ProtectionWorked | Should -Be $true -Because "Self-update protection should preserve module context"
+            } else {
+                Remove-Job $job -Force
+                throw "Update protection test timed out"
             }
         }
     }

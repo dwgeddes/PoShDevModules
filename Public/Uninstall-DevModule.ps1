@@ -54,8 +54,14 @@ function Uninstall-DevModule {
             Test-StandardParameter @validationParams
         }
         catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate remove parameters" -WriteToHost
-            return
+            # Self-uninstall protection: If we're uninstalling ourselves, use basic error handling  
+            if ($Name -eq 'PoShDevModules') {
+                Write-Error "Failed to validate remove parameters for '$Name': $($_.Exception.Message)"
+                return
+            } else {
+                Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "validate remove parameters" -WriteToHost
+                return
+            }
         }
         
         if (-not $InstallPath) {
@@ -112,8 +118,14 @@ function Uninstall-DevModule {
                 # Try to remove the module from the current session
                 try {
                     if (Get-Module -Name $Name -ErrorAction SilentlyContinue) {
-                        Remove-Module -Name $Name -Force
-                        Write-Verbose "Removed module '$Name' from current session."
+                        # Pipeline protection: Don't remove ourselves from session during pipeline execution
+                        # as it breaks subsequent pipeline processing
+                        if ($Name -eq 'PoShDevModules') {
+                            Write-Warning "Skipping module removal from session during self-uninstall to avoid breaking pipeline execution. Please restart PowerShell session if needed."
+                        } else {
+                            Remove-Module -Name $Name -Force
+                            Write-Verbose "Removed module '$Name' from current session."
+                        }
                     }
                 }
                 catch {
@@ -127,8 +139,15 @@ function Uninstall-DevModule {
             }
         }
         catch {
-            Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "remove module '$Name'" -WriteToHost
-            return
+            # Self-uninstall protection: If we're uninstalling ourselves, use basic error handling
+            if ($Name -eq 'PoShDevModules') {
+                Write-Error "Failed to remove module '$Name': $($_.Exception.Message)"
+                Write-Warning "Module removal may have been partially completed. Check the installation manually."
+                return
+            } else {
+                Invoke-StandardErrorHandling -ErrorRecord $_ -Operation "remove module '$Name'" -WriteToHost
+                return
+            }
         }
     }
 

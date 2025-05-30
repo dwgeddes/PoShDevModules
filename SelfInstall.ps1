@@ -4,10 +4,7 @@
     Self-installation script for PoShDevModules
 
 .DESCRIPTION
-    This script uses PoShDevM) catch {
-    Write-Warning "Module was installed but failed to reimport from new location: $($_.Exception.Message)"
-    Write-Host "You can manually import it with: Import-Module PoShDevModules" -ForegroundColor Yellow
-}es to install itself to the proper development modules
+    This script uses PoShDevModules to install itself to the proper development modules
     directory (~/.local/share/powershell/DevModules on macOS/Linux, 
     ~/Documents/PowerShell/DevModules on Windows) and then reimports the module 
     from the new location.
