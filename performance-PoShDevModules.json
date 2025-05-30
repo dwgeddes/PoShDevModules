@@ -1,0 +1,159 @@
+{
+  "session_metadata": {
+    "module_name": "PoShDevModules",
+    "session_start": "2024-12-19_15:30:00",
+    "session_end": null,
+    "total_duration_minutes": 0,
+    "final_status": "in_progress",
+    "model_used": "claude-3-5-sonnet",
+    "model_changes": []
+  },
+
+  "module_analysis": {
+    "archetype": "LegacyConversion",
+    "archetype_confidence": 0.8,
+    "function_count": null,
+    "avg_complexity": "medium",
+    "critical_issues": 1,
+    "major_issues": null,
+    "minor_issues": null,
+    "archetype_classification_accuracy": null
+  },
+
+  "assumption_tracking": {
+    "documented_assumptions": [
+      {
+        "assumption": "manual_dot_source_line_exists_in_update_devmodule",
+        "test_method": "read_file_line_32",
+        "validation_result": null,
+        "impact_if_wrong": "different_root_cause_needed"
+      },
+      {
+        "assumption": "private_function_update_devmodulefromgithub_exists",
+        "test_method": "file_exists_check",
+        "validation_result": null,
+        "impact_if_wrong": "missing_function_not_scope_issue"
+      },
+      {
+        "assumption": "module_psm1_properly_loads_private_functions",
+        "test_method": "examine_psm1_loading_pattern",
+        "validation_result": null,
+        "impact_if_wrong": "module_architecture_problem"
+      },
+      {
+        "assumption": "manual_dot_source_fails_in_module_context",
+        "test_method": "path_resolution_test",
+        "validation_result": null,
+        "impact_if_wrong": "different_scope_issue"
+      },
+      {
+        "assumption": "tests_missing_pipeline_integration_coverage",
+        "test_method": "examine_test_files",
+        "validation_result": null,
+        "impact_if_wrong": "test_issue_not_coverage_gap"
+      },
+      {
+        "assumption": "only_update_devmodulefromgithub_missing",
+        "test_method": "user_provided_additional_error_evidence",
+        "validation_result": false,
+        "impact_if_wrong": "systemic_module_loading_failure_not_single_function"
+      },
+      {
+        "assumption": "manual_dot_source_only_in_update_devmodule",
+        "test_method": "examine_all_public_functions_for_manual_dot_sources",
+        "validation_result": true,
+        "impact_if_wrong": "multiple_functions_have_same_anti_pattern"
+      },
+      {
+        "assumption": "issue_is_manual_dot_source_line_32",
+        "test_method": "semantic_search_and_code_analysis",
+        "validation_result": false,
+        "impact_if_wrong": "different_root_cause_identified"
+      },
+      {
+        "assumption": "module_self_reload_during_pipeline_breaks_context",
+        "test_method": "found_module_reload_logic_in_update_functions",
+        "validation_result": true,
+        "impact_if_wrong": "would_fix_wrong_problem"
+      }
+    ],
+    "untested_assumptions": [],
+    "assumption_validation_failures": [],
+    "mental_model_corrections": []
+  },
+
+  "decision_analysis": [
+    {
+      "decision_id": "001",
+      "timestamp": "2024-12-19_15:30:00",
+      "stage": "root_cause_analysis",
+      "decision_type": "problem_diagnosis",
+      "what_deciding": "systematic_validation_of_error_assumptions",
+      "assumptions_documented": [
+        {"assumption": "error_caused_by_manual_dot_source_scope_issue", "validated": null}
+      ],
+      "context_state": {
+        "error_symptom": "Update-DevModuleFromGitHub is not recognized",
+        "user_workflow": "Get-InstalledDevModule | Update-DevModule",
+        "previous_analysis": "conversation_summary_indicates_line_32_issue"
+      },
+      "options_considered": ["validate_existing_analysis", "start_fresh_investigation", "assume_previous_correct"],
+      "instruction_section_cited": "assumption_validation_protocol",
+      "choice_made": "validate_existing_analysis",
+      "reasoning": "Following instruction to test assumptions before implementing solutions",
+      "predicted_risks": ["wrong_root_cause", "fix_wrong_problem", "miss_real_issue"],
+      "predicted_failure_modes": [
+        {"failure": "assumptions_invalid", "detection": "file_content_contradicts_theory"},
+        {"failure": "complex_interaction_not_simple_fix", "detection": "multiple_scope_issues"},
+        {"failure": "test_coverage_adequate", "detection": "existing_tests_should_catch_this"}
+      ],
+      "time_spent_minutes": 0,
+      "actual_outcome": null,
+      "actual_failures_encountered": [],
+      "prediction_accuracy": null,
+      "would_make_same_decision": null,
+      "instruction_effectiveness": null
+    }
+  ],
+
+  "failure_chain_analysis": [
+    {
+      "failure_id": "001",
+      "timestamp": "2024-12-19_15:30:00",
+      "failure_description": "Update-DevModuleFromGitHub function not recognized in pipeline execution",
+      "impact_severity": "critical",
+      "detection_method": "user_correction",
+      "failure_chain": [
+        {
+          "decision_point": "function_scope_design",
+          "decision_made": "manual_dot_source_private_function",
+          "assumption_behind_decision": "manual_dot_source_reliable_in_module_context",
+          "assumption_validation_attempted": null,
+          "instruction_that_should_have_prevented": "anti_patterns_manual_dot_source",
+          "why_instruction_not_followed": "pre_existing_code_not_yet_analyzed",
+          "missing_information": "module_context_path_resolution_behavior",
+          "environmental_factors": "pipeline_execution_vs_direct_call_context"
+        }
+      ],
+      "root_cause_category": "untested_assumption",
+      "prevention_strategy": "assumption_validation_before_implementation"
+    }
+  ],
+
+  "user_correction_analysis": [],
+
+  "timeout_protection_analysis": {
+    "tests_with_timeout_protection": null,
+    "tests_without_protection": null,
+    "hanging_incidents_prevented": 0,
+    "timeout_methods_used": [],
+    "most_effective_method": null,
+    "operations_requiring_protection": ["module_update_operations", "git_operations"]
+  },
+
+  "instruction_adherence_analysis": {
+    "assumption_validation_protocol": {"adherence_rate": 1.0, "assumptions_documented": 5, "assumptions_tested": 0},
+    "decision_justification_protocol": {"adherence_rate": 1.0, "quality_score": 0.8},
+    "instruction_citation_requirement": {"adherence_rate": 1.0, "accuracy": 1.0}
+  }
+}

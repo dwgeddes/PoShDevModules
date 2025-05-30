@@ -28,8 +28,6 @@
 .EXAMPLE
     Update-DevModule -Name "MyModule" -Force -Verbose
 #>
-# Load private helper for GitHub update
-. (Join-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) '../Private/Update-DevModuleFromGitHub.ps1')
 
 function Update-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
@@ -140,11 +138,19 @@ function Update-DevModule {
                         Copy-Item -Path (Join-Path $module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
                         Write-Verbose "Copied updated module files"
 
-                        # Reload module if it's currently loaded
-                        if (Get-Module -Name $module.Name -ErrorAction SilentlyContinue) {
-                            Remove-Module -Name $module.Name -Force
-                            Import-Module $module.Name -Force
-                            Write-Verbose "Reloaded module in current session"
+                        # Reload module if it's currently loaded, but avoid self-reload during pipeline execution
+                        $currentModule = Get-Module -Name $module.Name -ErrorAction SilentlyContinue
+                        if ($currentModule) {
+                            # Check if we're updating the same module that's currently executing the update
+                            $isUpdatingSelf = $currentModule.Name -eq 'PoShDevModules' -and $module.Name -eq 'PoShDevModules'
+                            
+                            if (-not $isUpdatingSelf) {
+                                Remove-Module -Name $module.Name -Force
+                                Import-Module $module.Name -Force
+                                Write-Verbose "Reloaded module in current session"
+                            } else {
+                                Write-Warning "Skipping module reload during self-update to avoid breaking pipeline execution. Please restart PowerShell session to load the updated module."
+                            }
                         }
 
                         Write-Verbose "Successfully updated module '$($module.Name)' to version '$newVersion' from local source"

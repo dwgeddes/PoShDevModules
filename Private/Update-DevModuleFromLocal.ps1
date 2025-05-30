@@ -72,11 +72,19 @@ function Update-DevModuleFromLocal {
             Save-ModuleManifest -ModuleName $Module.Name -SourceType 'Local' -SourcePath $Module.SourcePath -InstallPath $installBasePath
         }
 
-        # Reload module if it's currently loaded
-        if (Get-Module -Name $Module.Name -ErrorAction SilentlyContinue) {
-            Remove-Module -Name $Module.Name -Force
-            Import-Module $Module.Name -Force
-            Write-Verbose "Reloaded module in current session"
+        # Reload module if it's currently loaded, but avoid self-reload during pipeline execution
+        $currentModule = Get-Module -Name $Module.Name -ErrorAction SilentlyContinue
+        if ($currentModule) {
+            # Check if we're updating the same module that's currently executing the update
+            $isUpdatingSelf = $currentModule.Name -eq 'PoShDevModules' -and $Module.Name -eq 'PoShDevModules'
+            
+            if (-not $isUpdatingSelf) {
+                Remove-Module -Name $Module.Name -Force
+                Import-Module $Module.Name -Force
+                Write-Verbose "Reloaded module in current session"
+            } else {
+                Write-Warning "Skipping module reload during self-update to avoid breaking pipeline execution. Please restart PowerShell session to load the updated module."
+            }
         }
 
         Write-Verbose "Successfully updated module '$($Module.Name)' to version '$newVersion' from local source"
