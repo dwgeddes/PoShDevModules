@@ -128,11 +128,18 @@ function Install-DevModuleFromGitHub {
             # Save metadata
             Save-ModuleManifest -ModuleName $moduleName -SourceType 'GitHub' -SourcePath "$($repoInfo.Owner)/$($repoInfo.Repo)" -InstallPath $InstallPath -Branch $Branch -ModuleSubPath $ModuleSubPath
 
-            # Import module if requested - PowerShell will auto-discover the latest version
+            # Import module if requested - use full path to manifest
             if (-not $SkipImport) {
                 try {
-                    Import-Module $moduleName -Force
-                    Write-Verbose "Imported module: $moduleName"
+                    $manifestPath = Join-Path $destinationPath "$moduleName.psd1"
+                    if (Test-Path $manifestPath) {
+                        Import-Module $manifestPath -Force
+                        Write-Verbose "Imported module: $moduleName from $manifestPath"
+                    } else {
+                        # Fallback to module name if manifest not found
+                        Import-Module $moduleName -Force
+                        Write-Verbose "Imported module: $moduleName (auto-discovery)"
+                    }
                 }
                 catch {
                     Write-Warning "Module installed but failed to import: $($_.Exception.Message)"
