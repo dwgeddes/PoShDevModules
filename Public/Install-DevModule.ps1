@@ -30,9 +30,10 @@
 
 function Install-DevModule {
     [CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName='Local')]
+    [OutputType([PSCustomObject])]
     param (
-        [Parameter(ParameterSetName='Local')]
-        [Parameter(ParameterSetName='GitHub')]
+        [Parameter(ParameterSetName='Local', ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(ParameterSetName='GitHub', ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [string]$Name,
         
         [Parameter(Mandatory=$true, ParameterSetName='Local')]
@@ -40,15 +41,33 @@ function Install-DevModule {
         [string]$SourcePath,
         
         [Parameter(Mandatory=$true, ParameterSetName='GitHub')]
+        [ValidateScript({
+            if ($_ -match '^([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)$' -or 
+                $_ -match '^https://github\.com/([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)(?:\.git)?/?$') {
+                $true
+            } else {
+                throw "GitHubRepo must be in format 'owner/repo' or a valid GitHub URL"
+            }
+        })]
         [string]$GitHubRepo,
         
         [Parameter(ParameterSetName='GitHub')]
+        [ValidateScript({
+            if ([string]::IsNullOrWhiteSpace($_)) { $true }
+            elseif ($_ -match '^[a-zA-Z0-9._/-]+$') { $true }
+            else { throw "Branch name contains invalid characters" }
+        })]
         [string]$Branch = 'main',
         
         [Parameter(ParameterSetName='GitHub')]
         [string]$ModuleSubPath = '',
         
         [Parameter(ParameterSetName='GitHub')]
+        [ValidateScript({
+            if ([string]::IsNullOrWhiteSpace($_)) { $true }
+            elseif ($_ -match '^gh[ps]_[A-Za-z0-9_]{36,}$') { $true }
+            else { throw "PersonalAccessToken must be a valid GitHub token format (ghp_ or ghs_ prefix)" }
+        })]
         [Alias('PAT', 'GitHubToken')]
         [string]$PersonalAccessToken,
         

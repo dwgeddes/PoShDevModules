@@ -61,28 +61,18 @@ function Install-DevModuleFromLocal {
         Write-Verbose "Found module manifest: $($manifestFile.Name)"
         Write-Verbose "Module name: $moduleName, Version: $moduleVersion"
 
-        # Create version-specific destination path: InstallPath/ModuleName/Version/
-        $moduleBasePath = Join-Path $InstallPath $moduleName
-        $destinationPath = Join-Path $moduleBasePath $moduleVersion
+        # Create version-specific destination path and handle existing installations
+        $pathInfo = New-ModuleInstallPath -InstallPath $InstallPath -ModuleName $moduleName -ModuleVersion $moduleVersion -Force:$Force
+        $destinationPath = $pathInfo.DestinationPath
 
-        # Check if module already exists
-        if ((Test-Path $destinationPath) -and -not $Force) {
-            throw "Module '$moduleName' version '$moduleVersion' already exists at $destinationPath. Use -Force to overwrite."
-        }
-
-        # Create destination directory (including version directory)
-        if (Test-Path $destinationPath) {
-            Remove-Item -Path $destinationPath -Recurse -Force
-            Write-Verbose "Removed existing module version directory"
-        }
-
-        New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
-        Write-Verbose "Created destination directory: $destinationPath"
+        # Prepare destination directory
+        Initialize-ModuleDestination -DestinationPath $destinationPath -Force:$Force -PSCmdlet $PSCmdlet
 
         # Copy module files
         # Suppress progress to prevent hanging in non-interactive environments
-        $ProgressPreference = 'SilentlyContinue'
-        Copy-Item -Path (Join-Path $SourcePath '*') -Destination $destinationPath -Recurse -Force
+        Invoke-WithProgressSuppressed {
+            Copy-Item -Path (Join-Path $SourcePath '*') -Destination $destinationPath -Recurse -Force
+        }
         Write-Verbose "Copied module files from $SourcePath to $destinationPath"
 
         # Save metadata

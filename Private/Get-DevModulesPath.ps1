@@ -32,9 +32,19 @@ function Get-DevModulesPath {
     }
     
     # Fallback to standard user module paths if PSModulePath doesn't contain expected paths
-    if ($IsWindows) { 
-        return (Join-Path $env:USERPROFILE 'Documents\PowerShell\Modules')
-    } else { 
-        return (Join-Path $env:HOME '.local/share/powershell/Modules')
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        # PowerShell 6+ has $IsWindows automatic variable
+        if ($IsWindows) { 
+            return (Join-Path $env:USERPROFILE 'Documents\PowerShell\Modules')
+        } else { 
+            return (Join-Path $env:HOME '.local/share/powershell/Modules')
+        }
+    } else {
+        # PowerShell 5.1 on Windows
+        if ($env:OS -eq 'Windows_NT') {
+            return (Join-Path $env:USERPROFILE 'Documents\PowerShell\Modules')
+        } else {
+            return (Join-Path $env:HOME '.local/share/powershell/Modules')
+        }
     }
 }

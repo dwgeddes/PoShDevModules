@@ -30,9 +30,8 @@ function Update-DevModuleFromGitHub {
         Write-Verbose "Downloading latest version from branch: $branch"
 
         # Create temporary directory for download
-        $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "DevModule_$(Get-Random)"
-        New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
-        Write-Verbose "Created temporary directory: $tempDir"
+        $tempInfo = New-TempDirectory -Prefix "DevModule"
+        $tempDir = $tempInfo.Path
 
         try {
             # Download the repository
@@ -43,20 +42,31 @@ function Update-DevModuleFromGitHub {
             
             # Use appropriate method based on whether we have a PAT
             # Suppress progress to prevent hanging in non-interactive environments
-            $ProgressPreference = 'SilentlyContinue'
-            if ($PersonalAccessToken) {
-                $headers = @{ Authorization = "token $PersonalAccessToken" }
-                Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
-            } else {
-                Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+            Invoke-WithProgressSuppressed {
+                if ($PersonalAccessToken) {
+                    try {
+                        # Secure API key handling - create headers and clean up after use
+                        $headers = @{ Authorization = "token $PersonalAccessToken" }
+                        Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
+                    } finally {
+                        # Security: Clear sensitive data from memory
+                        if ($headers) {
+                            $headers.Clear()
+                            $headers = $null
+                        }
+                    }
+                } else {
+                    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+                }
             }
 
             Write-Verbose "Downloaded repository archive"
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
-            $ProgressPreference = 'SilentlyContinue'
-            Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+            Invoke-WithProgressSuppressed {
+                Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+            }
             Write-Verbose "Extracted repository archive"
 
             # Find the actual module directory
@@ -115,8 +125,9 @@ function Update-DevModuleFromGitHub {
 
             # Copy updated files
             if ($PSCmdlet.ShouldProcess($newDestinationPath, "Copy updated module files")) {
-                $ProgressPreference = 'SilentlyContinue'
-                Copy-Item -Path (Join-Path $sourcePath '*') -Destination $newDestinationPath -Recurse -Force
+                Invoke-WithProgressSuppressed {
+                    Copy-Item -Path (Join-Path $sourcePath '*') -Destination $newDestinationPath -Recurse -Force
+                }
                 Write-Verbose "Copied updated module files"
             }
 
@@ -149,10 +160,7 @@ function Update-DevModuleFromGitHub {
         }
         finally {
             # Clean up temporary directory
-            if (Test-Path $tempDir) {
-                Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Verbose "Cleaned up temporary directory"
-            }
+            & $tempInfo.Cleanup
         }
     }
     catch {

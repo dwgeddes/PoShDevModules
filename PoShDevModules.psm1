@@ -60,6 +60,5 @@ Export-ModuleMember -Function @(
     'Install-DevModule',
     'Get-InstalledDevModule',
     'Uninstall-DevModule',
-    'Update-DevModule',
-    'Invoke-DevModuleOperation'
+    'Update-DevModule'
 )

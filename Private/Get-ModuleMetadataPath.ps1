@@ -27,5 +27,8 @@ function Get-ModuleMetadataPath {
         $InstallPath = Get-DevModulesPath
     }
     
-    return Join-Path $InstallPath '.metadata'
+    # Normalize path separators for cross-platform compatibility
+    $normalizedPath = $InstallPath -replace '\\', [System.IO.Path]::DirectorySeparatorChar
+    
+    return Join-Path $normalizedPath '.metadata'
 }

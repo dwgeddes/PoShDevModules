@@ -27,8 +27,9 @@
 
 function Uninstall-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([void])]
     param (
-        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]$Name,
         
@@ -67,6 +68,16 @@ function Uninstall-DevModule {
         if (-not $InstallPath) {
             $InstallPath = Get-DevModulesPath
         }
+        
+        # Robust cross-platform path normalization
+        $InstallPath = $InstallPath -replace '\\', [System.IO.Path]::DirectorySeparatorChar
+        
+        # Handle edge case where backslash replacement creates invalid UNC-style paths on Unix
+        if ((-not $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -ne 'Windows_NT') -and $InstallPath.StartsWith('\\')) {
+            # On Unix systems, convert leading \\ to / to fix UNC-style artifacts
+            $InstallPath = $InstallPath -replace '^\\+', '/'
+        }
+        
         Write-Verbose "Starting removal of module: $Name"
     }
 

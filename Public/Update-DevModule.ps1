@@ -31,13 +31,18 @@
 
 function Update-DevModule {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([PSCustomObject])]
     param (
-        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]$Name,
         
         [Alias('PAT', 'GitHubToken')]
-        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+            if ([string]::IsNullOrWhiteSpace($_)) { $true }
+            elseif ($_ -match '^gh[ps]_[A-Za-z0-9_]{36,}$') { $true }
+            else { throw "PersonalAccessToken must be a valid GitHub token format (ghp_ or ghs_ prefix)" }
+        })]
         [string]$PersonalAccessToken,
         
         [string]$InstallPath,
@@ -134,8 +139,9 @@ function Update-DevModule {
                         New-Item -Path $newDestinationPath -ItemType Directory -Force | Out-Null
                         Write-Verbose "Created new version directory: $newDestinationPath"
                         
-                        $ProgressPreference = 'SilentlyContinue'
-                        Copy-Item -Path (Join-Path $module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
+                        Invoke-WithProgressSuppressed {
+                            Copy-Item -Path (Join-Path $module.SourcePath '*') -Destination $newDestinationPath -Recurse -Force
+                        }
                         Write-Verbose "Copied updated module files"
 
                         # Reload module if it's currently loaded, but avoid self-reload during pipeline execution

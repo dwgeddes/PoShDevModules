@@ -24,8 +24,9 @@
 
 function Get-InstalledDevModule {
     [CmdletBinding()]
+    [OutputType([PSCustomObject[]])]
     param (
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]$Name,
         
@@ -43,6 +44,16 @@ function Get-InstalledDevModule {
         if (-not $InstallPath) {
             $InstallPath = Get-DevModulesPath
         }
+        
+        # Robust cross-platform path normalization
+        $InstallPath = $InstallPath -replace '\\', [System.IO.Path]::DirectorySeparatorChar
+        
+        # Handle edge case where backslash replacement creates invalid UNC-style paths on Unix
+        if ((-not $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -ne 'Windows_NT') -and $InstallPath.StartsWith('\\')) {
+            # On Unix systems, convert leading \\ to / to fix UNC-style artifacts
+            $InstallPath = $InstallPath -replace '^\\+', '/'
+        }
+        
         if (-not (Test-Path $InstallPath)) {
             Write-Verbose "Install path does not exist: $InstallPath"
             return

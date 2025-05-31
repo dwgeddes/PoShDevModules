@@ -29,11 +29,11 @@ Describe "Cross-Platform Path Handling" {
             # via the public functions' default behavior
             
             # Look at Get-InstalledDevModule without specifying path
-            $isWindows = $PSVersionTable.PSVersion.Major -ge 6 ? 
+            $testIsWindows = $PSVersionTable.PSVersion.Major -ge 6 ? 
                 [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows) : 
                 $env:OS -eq 'Windows_NT'
             
-            if ($isWindows) {
+            if ($testIsWindows) {
                 # Mock expected Windows behavior
                 Mock Get-StandardModulePath {
                     return Join-Path $env:USERPROFILE "Documents\PowerShell\Modules"

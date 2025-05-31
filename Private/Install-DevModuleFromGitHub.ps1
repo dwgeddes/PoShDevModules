@@ -49,9 +49,8 @@ function Install-DevModuleFromGitHub {
         Write-Verbose "Downloading from GitHub: $($repoInfo.Owner)/$($repoInfo.Repo)"
 
         # Create temporary directory for download
-        $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "DevModule_$(Get-Random)"
-        New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
-        Write-Verbose "Created temporary directory: $tempDir"
+        $tempInfo = New-TempDirectory -Prefix "DevModule"
+        $tempDir = $tempInfo.Path
 
         try {
             # Download the repository
@@ -62,20 +61,31 @@ function Install-DevModuleFromGitHub {
             
             # Use appropriate method based on whether we have a PAT
             # Suppress progress to prevent hanging in non-interactive environments
-            $ProgressPreference = 'SilentlyContinue'
-            if ($PersonalAccessToken) {
-                $headers = @{ Authorization = "token $PersonalAccessToken" }
-                Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
-            } else {
-                Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+            Invoke-WithProgressSuppressed {
+                if ($PersonalAccessToken) {
+                    try {
+                        # Secure API key handling - create headers and clean up after use
+                        $headers = @{ Authorization = "token $PersonalAccessToken" }
+                        Invoke-RestMethod -Uri $downloadUrl -OutFile $zipPath -Headers $headers
+                    } finally {
+                        # Security: Clear sensitive data from memory
+                        if ($headers) {
+                            $headers.Clear()
+                            $headers = $null
+                        }
+                    }
+                } else {
+                    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+                }
             }
 
             Write-Verbose "Downloaded repository archive"
 
             # Extract the archive
             $extractPath = Join-Path $tempDir "extracted"
-            $ProgressPreference = 'SilentlyContinue'
-            Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+            Invoke-WithProgressSuppressed {
+                Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+            }
             Write-Verbose "Extracted repository archive"
 
             # Find the actual module directory
@@ -103,26 +113,17 @@ function Install-DevModuleFromGitHub {
             
             Write-Verbose "Found module: $moduleName, Version: $moduleVersion"
 
-            # Create version-specific destination path: InstallPath/ModuleName/Version/
-            $moduleBasePath = Join-Path $InstallPath $moduleName
-            $destinationPath = Join-Path $moduleBasePath $moduleVersion
+            # Create version-specific destination path and handle existing installations
+            $pathInfo = New-ModuleInstallPath -InstallPath $InstallPath -ModuleName $moduleName -ModuleVersion $moduleVersion -Force:$Force
+            $destinationPath = $pathInfo.DestinationPath
 
-            # Check if module already exists
-            if ((Test-Path $destinationPath) -and -not $Force) {
-                throw "Module '$moduleName' version '$moduleVersion' already exists at $destinationPath. Use -Force to overwrite."
-            }
-
-            # Create destination directory (including version directory)
-            if (Test-Path $destinationPath) {
-                Remove-Item -Path $destinationPath -Recurse -Force
-                Write-Verbose "Removed existing module version directory"
-            }
-
-            New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
+            # Prepare destination directory
+            Initialize-ModuleDestination -DestinationPath $destinationPath -Force:$Force -PSCmdlet $PSCmdlet
 
             # Copy module files
-            $ProgressPreference = 'SilentlyContinue'
-            Copy-Item -Path (Join-Path $sourcePath '*') -Destination $destinationPath -Recurse -Force
+            Invoke-WithProgressSuppressed {
+                Copy-Item -Path (Join-Path $sourcePath '*') -Destination $destinationPath -Recurse -Force
+            }
             Write-Verbose "Copied module files to: $destinationPath"
 
             # Save metadata
@@ -154,10 +155,7 @@ function Install-DevModuleFromGitHub {
         }
         finally {
             # Clean up temporary directory
-            if (Test-Path $tempDir) {
-                Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Verbose "Cleaned up temporary directory"
-            }
+            & $tempInfo.Cleanup
         }
     }
     catch {
