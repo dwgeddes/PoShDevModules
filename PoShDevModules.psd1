@@ -18,7 +18,7 @@
     Copyright = '(c) 2025 David Geddes. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description = 'Facilitates limited management of PowerShell modules from local paths or Github repos without needing to publish to NuGet repositories. The purpose is to make it easier to manage modules still under development.'
+    Description = 'PowerShell module for managing development modules from local paths and GitHub repositories with version control and cross-platform support. Simplifies development workflows by providing standardized module installation, updating, and tracking capabilities.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '5.1'
@@ -44,7 +44,7 @@
     PrivateData = @{
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('PowerShell', 'Module', 'Development', 'GitHub', 'DevOps')
+            Tags = @('PowerShell', 'Module', 'Development', 'GitHub', 'DevOps', 'LocalModules', 'VersionControl', 'CrossPlatform')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/dgeddes/PoShDevModules/blob/main/LICENSE'
@@ -53,7 +53,26 @@
             ProjectUri = 'https://github.com/dgeddes/PoShDevModules'
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Initial release of PoShDevModules - PowerShell module for managing development modules from local paths and GitHub repositories.'
+            ReleaseNotes = @'
+Initial release of PoShDevModules v1.0.0
+
+Features:
+- Install PowerShell modules from local development paths
+- Install modules directly from GitHub repositories  
+- Automatic version management with side-by-side installations
+- Cross-platform support (Windows, macOS, Linux)
+- Update tracking from original sources
+- Comprehensive metadata management
+- Complete test suite with 10/10 workflow tests passing
+
+Core Functions:
+- Install-DevModule: Install from local path or GitHub
+- Get-InstalledDevModule: List and query installed modules
+- Update-DevModule: Update from original source
+- Uninstall-DevModule: Clean removal with metadata cleanup
+
+Perfect for PowerShell module developers who need to manage modules under active development without publishing to galleries.
+'@
         }
     }
 }

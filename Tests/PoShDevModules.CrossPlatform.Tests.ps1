@@ -11,7 +11,11 @@
 
 Describe "PoShDevModules Cross-Platform Compatibility" {
     BeforeAll {
-        # MANDATORY: Timeout protection
+        # Fresh module import FIRST
+        Remove-Module PoShDevModules -Force -ErrorAction SilentlyContinue
+        Import-Module $PSScriptRoot/../PoShDevModules.psd1 -Force
+        
+        # MANDATORY: Timeout protection - AFTER module import
         Mock Read-Host { return "MockedInput" } -ModuleName 'PoShDevModules'
         Mock Get-Credential { 
             $password = ConvertTo-SecureString "MockedPassword123!" -AsPlainText -Force
@@ -20,14 +24,10 @@ Describe "PoShDevModules Cross-Platform Compatibility" {
         Mock Write-Progress { } -ModuleName 'PoShDevModules'
         $global:ConfirmPreference = 'None'
         
-        # Fresh module import
-        Remove-Module PoShDevModules -Force -ErrorAction SilentlyContinue
-        Import-Module $PSScriptRoot/../PoShDevModules.psd1 -Force
-        
-        # Platform detection
-        $script:IsWindows = $PSVersionTable.PSVersion.Major -le 5 -or $IsWindows
-        $script:IsLinux = $PSVersionTable.PSEdition -eq 'Core' -and $IsLinux
-        $script:IsMacOS = $PSVersionTable.PSEdition -eq 'Core' -and $IsMacOS
+        # Platform detection - avoid overwriting read-only variables
+        $script:TestIsWindows = $PSVersionTable.PSVersion.Major -le 5 -or ((Test-Path variable:IsWindows) -and $IsWindows)
+        $script:TestIsLinux = $PSVersionTable.PSEdition -eq 'Core' -and ((Test-Path variable:IsLinux) -and $IsLinux)
+        $script:TestIsMacOS = $PSVersionTable.PSEdition -eq 'Core' -and ((Test-Path variable:IsMacOS) -and $IsMacOS)
         
         # Cross-platform test paths
         $script:TestInstallPath = Join-Path $TestDrive "CrossPlatformInstalls"
@@ -60,7 +60,7 @@ function Test-CrossPlatformFunction {
     
     Context "Path Handling Across Platforms" {
         
-        It "handles Unix paths without drive letters" -Skip:$script:IsWindows {
+        It "handles Unix paths without drive letters" -Skip:$script:TestIsWindows {
             # ACT: Install module using Unix-style paths
             $result = Install-DevModule -Name $script:TestModuleName -SourcePath (Join-Path $script:TestSourcePath $script:TestModuleName) -InstallPath $script:TestInstallPath -Force
             
@@ -74,7 +74,7 @@ function Test-CrossPlatformFunction {
             $installed.Name | Should -Be $script:TestModuleName
         }
         
-        It "handles Windows paths with drive letters" -Skip:(-not $script:IsWindows) {
+        It "handles Windows paths with drive letters" -Skip:(-not $script:TestIsWindows) {
             # ACT: Install module using Windows-style paths
             $result = Install-DevModule -Name $script:TestModuleName -SourcePath (Join-Path $script:TestSourcePath $script:TestModuleName) -InstallPath $script:TestInstallPath -Force
             
@@ -102,7 +102,7 @@ function Test-CrossPlatformFunction {
     
     Context "Default Install Path Resolution" {
         
-        It "resolves default install path correctly on macOS/Linux" -Skip:$script:IsWindows {
+        It "resolves default install path correctly on macOS/Linux" -Skip:$script:TestIsWindows {
             # ACT: Install without specifying InstallPath (use default)
             $result = Install-DevModule -Name $script:TestModuleName -SourcePath (Join-Path $script:TestSourcePath $script:TestModuleName) -Force
             
@@ -111,7 +111,7 @@ function Test-CrossPlatformFunction {
             $result.InstallPath | Should -Match "\.local/share/powershell|PowerShell"
         }
         
-        It "resolves default install path correctly on Windows" -Skip:(-not $script:IsWindows) {
+        It "resolves default install path correctly on Windows" -Skip:(-not $script:TestIsWindows) {
             # ACT: Install without specifying InstallPath (use default)
             $result = Install-DevModule -Name $script:TestModuleName -SourcePath (Join-Path $script:TestSourcePath $script:TestModuleName) -Force
             
@@ -123,7 +123,7 @@ function Test-CrossPlatformFunction {
     
     Context "File System Operations" {
         
-        It "handles case-sensitive file systems correctly" -Skip:$script:IsWindows {
+        It "handles case-sensitive file systems correctly" -Skip:$script:TestIsWindows {
             # ARRANGE: Create modules with different casing
             $upperModulePath = Join-Path $script:TestSourcePath "UPPERCASEMODULE"
             $lowerModulePath = Join-Path $script:TestSourcePath "lowercasemodule"
@@ -160,7 +160,7 @@ function Test-CrossPlatformFunction {
             $installed.Name | Should -Contain "lowercasemodule"
         }
         
-        It "handles case-insensitive file systems correctly" -Skip:(-not $script:IsWindows) {
+        It "handles case-insensitive file systems correctly" -Skip:(-not $script:TestIsWindows) {
             # ARRANGE: Attempt to install same module with different casing
             $result1 = Install-DevModule -Name "TestCase" -SourcePath (Join-Path $script:TestSourcePath $script:TestModuleName) -InstallPath $script:TestInstallPath -Force
             
@@ -175,7 +175,7 @@ function Test-CrossPlatformFunction {
     
     Context "Permission Handling" {
         
-        It "handles restricted permissions gracefully" -Skip:$script:IsWindows {
+        It "handles restricted permissions gracefully" -Skip:$script:TestIsWindows {
             # ARRANGE: Create restricted directory (Unix-style permissions)
             $restrictedPath = Join-Path $TestDrive "RestrictedDir"
             New-Item -Path $restrictedPath -ItemType Directory -Force

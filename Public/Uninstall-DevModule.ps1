@@ -86,21 +86,24 @@ function Uninstall-DevModule {
             # Check if module exists
             $module = Get-InstalledDevModule -Name $Name -InstallPath $InstallPath
             if (-not $module) {
-                Write-Error "Module '$Name' is not installed."
+                Write-Warning "Module '$Name' is not installed."
                 return
             }
 
             # Store module info before removal for return value
             $moduleToRemove = $module.PSObject.Copy()
 
-            $modulePath = $module.InstallPath  # This is now the base module path with all versions
+            # Calculate the base module directory path
+            # InstallPath is version-specific (e.g., /path/ModuleName/1.0.0)
+            # We need the parent directory (e.g., /path/ModuleName)
+            $moduleBasePath = Split-Path $module.InstallPath -Parent
             $metadataPath = Get-ModuleMetadataPath -InstallPath $InstallPath
             $metadataFile = Join-Path $metadataPath "$Name.json"
 
             # Confirm removal unless Force is specified or in WhatIf mode
             if (-not $Force -and -not $WhatIfPreference) {
                 $title = "Remove Development Module"
-                $message = "Are you sure you want to remove the module '$Name' from '$modulePath'?"
+                $message = "Are you sure you want to remove the module '$Name' from '$moduleBasePath'?"
                 $choices = @(
                     [System.Management.Automation.Host.ChoiceDescription]::new("&Yes", "Remove the module")
                     [System.Management.Automation.Host.ChoiceDescription]::new("&No", "Cancel the operation")
@@ -114,10 +117,10 @@ function Uninstall-DevModule {
             }
 
             # Remove the module if it should be processed
-            if ($PSCmdlet.ShouldProcess($modulePath, "Remove module directory")) {
-                if (Test-Path $modulePath) {
-                    Remove-Item -Path $modulePath -Recurse -Force
-                    Write-Verbose "Removed module directory: $modulePath"
+            if ($PSCmdlet.ShouldProcess($moduleBasePath, "Remove module directory")) {
+                if (Test-Path $moduleBasePath) {
+                    Remove-Item -Path $moduleBasePath -Recurse -Force
+                    Write-Verbose "Removed module directory: $moduleBasePath"
                 }
 
                 # Remove metadata

@@ -92,8 +92,10 @@ function Install-DevModuleFromLocal {
 
         Write-Information "Successfully installed module '$moduleName' from local path" -InformationAction Continue
         
-        # Return the installed module object
-        return Get-InstalledDevModule -Name $moduleName -InstallPath $InstallPath
+        # Return the installed module object with status
+        $installedModule = Get-InstalledDevModule -Name $moduleName -InstallPath $InstallPath
+        $installedModule | Add-Member -MemberType NoteProperty -Name 'Status' -Value 'Success' -Force
+        return $installedModule
     }
     catch {
         throw "Failed to install module from local path: $($_.Exception.Message)"

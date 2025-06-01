@@ -198,7 +198,8 @@ function Update-DevModule {
 
                 Write-Information "Successfully updated module: $Name" -InformationAction Continue
                 
-                # Return the updated module object
+                # Return the updated module object with status
+                $updatedModule | Add-Member -MemberType NoteProperty -Name 'Status' -Value 'Success' -Force
                 return $updatedModule
             }
         }
